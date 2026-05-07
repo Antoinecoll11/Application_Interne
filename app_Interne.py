@@ -7,23 +7,9 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import streamlit as st
 from scipy.interpolate import PchipInterpolator
-import plotly.graph_objects as go
 import streamlit.components.v1 as components
-import textwrap
 from pathlib import Path
-
 import json
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from io import BytesIO
-
-
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from reportlab.lib import colors
-from io import BytesIO
-
-from reportlab.lib.utils import ImageReader
 
 # ==========================================
 # CHEMINS / CONSTANTES
@@ -35,7 +21,6 @@ batteries_path = BASE_DIR / "batteries.xlsx"
 panneau_path = BASE_DIR / "panneau.jpg"
 prod_excel_path = BASE_DIR / "production.xlsx"
 
-MOT_DE_PASSE_CONFIG = "1234"
 
 # ==========================================
 # INITIALISATION
@@ -45,7 +30,6 @@ def initialiser_page():
 
 def initialiser_session_state():
     valeurs_defaut = {
-        "acces_config": False,
         "cout_pv_par_wc": 1.50,
         "cout_batterie_par_wh": 0.75,
         "prix_electricite": 0.27,
@@ -548,11 +532,6 @@ def afficher_apercu_production(mon_tableau_prod, titre="Aperçu production"):
     st.pyplot(fig_prod)
 
 
-
-
-
-
-
 def calcul_gain_ems_annuel(mon_tableau, taux_ems, prix_electricite, prix_injection):
     df = mon_tableau.copy()
     df["Heure"] = pd.to_datetime(df["Date&Time"]).dt.hour
@@ -629,8 +608,6 @@ def calcul_gain_ems_annuel(mon_tableau, taux_ems, prix_electricite, prix_injecti
     }
 
 
-
-
 def afficher_apercu_4_saisons_conso_base(date_series, consommation_base, titre="Consommation de base sur 4 saisons"):
     df = pd.DataFrame({
         "Date&Time": pd.to_datetime(date_series),
@@ -694,7 +671,6 @@ def afficher_apercu_4_saisons_conso_base(date_series, consommation_base, titre="
     st.pyplot(fig, use_container_width=False)
 
 
-
 def analyser_depassements_puissance(mon_tableau, puissance_reference_kw):
     
     seuil_w = puissance_reference_kw * 1000
@@ -719,585 +695,13 @@ def analyser_depassements_puissance(mon_tableau, puissance_reference_kw):
 
 
 
+
+
+
 # ==========================================
 # FONCTION SAUVEGARDE PDF
 # ==========================================
 
-def construire_donnees_projet():
-    projet = {
-        "puissance_crete": st.session_state.get("puissance_crete", 10.0),
-        "augmentation_prod_pct": st.session_state.get("augmentation_prod_pct", 0.0),
-        "borne_active": st.session_state.get("borne_active", False),
-        "puissance_borne_kw": st.session_state.get("puissance_borne_kw", 11.0),
-        "horaires_borne": st.session_state.get("horaires_borne", "18-20"),
-        "jours_selectionnes": st.session_state.get("jours_selectionnes", ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]),
-        "chauffe_eau_actif": st.session_state.get("chauffe_eau_actif", False),
-        "puissance_chauffe_eau_kw": st.session_state.get("puissance_chauffe_eau_kw", 2.0),
-        "horaires_chauffe_eau": st.session_state.get("horaires_chauffe_eau", "6-8;18-20"),
-        "jours_chauffe_eau": st.session_state.get("jours_chauffe_eau", ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]),
-        "pac_active": st.session_state.get("pac_active", False),
-        "puissance_pac_kw": st.session_state.get("puissance_pac_kw", 2.5),
-        "horaires_pac": st.session_state.get("horaires_pac", "6-9;17-22"),
-        "jours_pac": st.session_state.get("jours_pac", ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]),
-        "chauffage_active": st.session_state.get("chauffage_active", False),
-        "puissance_chauffage_kw": st.session_state.get("puissance_chauffage_kw", 1.5),
-        "horaires_chauffage": st.session_state.get("horaires_chauffage", "6-8;19-22"),
-        "jours_chauffage": st.session_state.get("jours_chauffage", ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]),
-        "aide_pv_active": st.session_state.get("aide_pv_active", True),
-        "aide_batterie_active": st.session_state.get("aide_batterie_active", True),
-        "mode_prod": st.session_state.get("mode_prod", "CSV SolarEdge"),
-        "mode_conso": st.session_state.get("mode_conso", "Profils types (Fichier CSV)"),
-        "prod_specifique": st.session_state.get("prod_specifique", 900.0),
-        "activer_batterie": st.session_state.get("activer_batterie", False),
-        "choix_batterie": st.session_state.get("choix_batterie", None),
-        "profil_choisi": st.session_state.get("profil_choisi", None),
-        "appareils_personnalises": st.session_state.get("appareils_personnalises", []),
-        "coeffs_mensuels_conso": st.session_state.get("coeffs_mensuels_conso", [1.0] * 12),
-        "ems_actif": st.session_state.get("ems_actif", False),
-        "taux_ems": st.session_state.get("taux_ems", 25),
-        "cout_ems": st.session_state.get("cout_ems", 1500.0),
-        "productions_mensuelles": [
-        st.session_state.get(f"prod_mois_{mois}", 0.0)
-        for mois in ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin",
-                    "Juil", "Aoû", "Sep", "Oct", "Nov", "Déc"]
-        ],
-    }
-
-    return projet
-
-def generer_graphique_repartition_production_pdf(mon_tableau):
-    bilan_mensuel = mon_tableau.groupby(mon_tableau['Date&Time'].dt.month)[
-        ['Autoconsommation', 'Export_Reseau']
-    ].sum() / 1000
-
-    bilan_mensuel = bilan_mensuel.reindex(range(1, 13), fill_value=0)
-
-    mois_noms = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
-    x = np.arange(len(mois_noms))
-
-    fig, ax = plt.subplots(figsize=(25, 12))
-
-    ax.bar(
-        x,
-        bilan_mensuel['Autoconsommation'],
-        width=0.6,
-        label='Autoconsommation',
-        color="#08CE5A"
-    )
-
-    ax.bar(
-        x,
-        bilan_mensuel['Export_Reseau'],
-        width=0.6,
-        bottom=bilan_mensuel['Autoconsommation'],
-        label='Export réseau',
-        color="#00E1FF"
-    )
-
-    ax.set_title("Répartition de la production", fontsize=60, pad=12)
-    ax.set_ylabel("Énergie (kWh)", fontsize=40)
-    ax.set_xticks(x)
-    ax.set_xticklabels(mois_noms)
-    ax.tick_params(axis='x', labelsize=40)
-    ax.tick_params(axis='y', labelsize=40)
-    ax.grid(axis='y', linestyle='--', alpha=0.6)
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=2, fontsize=40)
-
-
-    plt.tight_layout(pad=1.2)
-
-    image_buffer = BytesIO()
-    fig.savefig(image_buffer, format='png', dpi=200, bbox_inches='tight')
-    plt.close(fig)
-    image_buffer.seek(0)
-
-    return image_buffer
-
-def generer_graphique_bilan_mensuel(mon_tableau):
-    bilan_mensuel = mon_tableau.groupby(mon_tableau['Date&Time'].dt.month)[
-        ['Autoconsommation', 'Import_Reseau']
-    ].sum() / 1000
-
-    bilan_mensuel = bilan_mensuel.reindex(range(1, 13), fill_value=0)
-
-    mois_noms = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
-    x = np.arange(len(mois_noms))
-
-    fig, ax = plt.subplots(figsize=(25, 12))
-
-    ax.bar(
-        x,
-        bilan_mensuel['Autoconsommation'],
-        width=0.6,
-        label='Autoconsommation',
-        color="#08CE5A"
-    )
-
-    ax.bar(
-        x,
-        bilan_mensuel['Import_Reseau'],
-        width=0.6,
-        bottom=bilan_mensuel['Autoconsommation'],
-        label='Import réseau',
-        color="#FFA600"
-    )
-
-    ax.set_title("Répartition de la consommation", fontsize=60, pad=12)
-    ax.set_ylabel("Énergie (kWh)", fontsize=40)
-    ax.set_xticks(x)
-    ax.set_xticklabels(mois_noms)
-    ax.tick_params(axis='x', labelsize=40)
-    ax.tick_params(axis='y', labelsize=40)
-    ax.grid(axis='y', linestyle='--', alpha=0.6)
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=2, fontsize=40)
-
-
-    plt.tight_layout(pad=1.2)
-
-    image_buffer = BytesIO()
-    fig.savefig(image_buffer, format='png', dpi=200, bbox_inches='tight')
-    plt.close(fig)
-    image_buffer.seek(0)
-
-    return image_buffer
-
-def generer_graphique_roi(
-    finance_pv,
-    budget_pv,
-    finance_pv_batt=None,
-    budget_pv_batt=None,
-    gain_total_ems=None,
-    budget_pv_batt_ems=None
-):
-    nb_annees = 15
-    annees = np.arange(1, nb_annees + 1)
-
-    fig, ax = plt.subplots(figsize=(9, 4.5))
-
-    # --------------------------------------------------
-    # SCÉNARIO PV
-    # --------------------------------------------------
-    gains_cumules_pv = finance_pv["gain_normal"] * annees
-    ax.plot(
-        annees,
-        gains_cumules_pv,
-        marker='o',
-        linewidth=2,
-        label="Avec PV",
-        color="#2F87C8"
-    )
-    ax.axhline(
-        y=budget_pv["cout_total_net"],
-        linestyle='--',
-        linewidth=2,
-        label="Coût net PV",
-        color="#2F87C8"
-    )
-
-    # --------------------------------------------------
-    # SCÉNARIO PV + BATTERIE + EMS
-    # -> tracé avant PV+batterie pour laisser la verte visible
-    # --------------------------------------------------
-    if gain_total_ems is not None and budget_pv_batt_ems is not None:
-        gains_cumules_ems = gain_total_ems * annees
-
-        ax.plot(
-            annees,
-            gains_cumules_ems,
-            marker='o',
-            linewidth=2,
-            label="Avec PV + batterie + EMS",
-            color="#F28C28",
-            zorder=2
-        )
-        ax.axhline(
-            y=budget_pv_batt_ems["cout_total_net"],
-            linestyle='--',
-            linewidth=2,
-            label="Coût net PV + batterie + EMS",
-            color="#F28C28",
-            zorder=2
-        )
-
-    # --------------------------------------------------
-    # SCÉNARIO PV + BATTERIE
-    # --------------------------------------------------
-    if finance_pv_batt is not None and budget_pv_batt is not None:
-        gains_cumules_pv_batt = finance_pv_batt["gain_normal"] * annees
-
-        ax.plot(
-            annees,
-            gains_cumules_pv_batt,
-            marker='o',
-            linewidth=2,
-            label="Avec PV + batterie",
-            color="#43B581",
-            zorder=3
-        )
-        ax.axhline(
-            y=budget_pv_batt["cout_total_net"],
-            linestyle='--',
-            linewidth=2,
-            label="Coût net PV + batterie",
-            color="#43B581",
-            zorder=3
-        )
-
-    ax.set_title("Projection des gains cumulés")
-    ax.set_xlabel("Année")
-    ax.set_ylabel("Montant (€)")
-    ax.set_xticks(annees)
-    ax.grid(True, linestyle='--', alpha=0.6)
-    ax.legend(fontsize=8)
-
-    plt.tight_layout()
-
-    image_buffer = BytesIO()
-    fig.savefig(image_buffer, format='png', dpi=200, bbox_inches='tight')
-    plt.close(fig)
-    image_buffer.seek(0)
-
-    return image_buffer
-
-def generer_pdf_resume(
-    data_import,
-    sidebar_data,
-    indicateurs,
-    budget,
-    finance_pv,
-    finance_pv_batt,
-    scenario_batterie_disponible,
-    mon_tableau,
-    budget_pv,
-    budget_pv_batt,
-    budget_pv_batt_ems=None,
-    gain_total_ems=None,
-    numero_projet="P-2026-001",
-    nom_client="",
-    prenom_client="",
-    adresse_projet=""
-):
-    buffer = BytesIO()
-    pdf = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
-
-    # ======================================================
-    # COULEURS / CONSTANTES
-    # ======================================================
-    marge_g = 8
-    marge_d = 8
-    largeur_page = width - marge_g - marge_d
-
-    bleu = colors.HexColor("#2E86D1")
-    bleu_fonce = colors.HexColor("#1F5F99")
-    bleu_clair = colors.HexColor("#DCEAF7")
-    noir = colors.black
-    gris = colors.HexColor("#666666")
-    gris_tres_clair = colors.HexColor("#F2F4F7")
-
-    def euro(val):
-        try:
-            return f"{val:,.2f} EUR".replace(",", " ")
-        except Exception:
-            return "0.00 EUR"
-
-    def kwh(val):
-        try:
-            return f"{val:,.0f} kWh".replace(",", " ")
-        except Exception:
-            return "0 kWh"
-
-    def pct(val):
-        try:
-            return f"{val:.1f} %"
-        except Exception:
-            return "0.0 %"
-
-    def safe_get(d, key, default=0):
-        try:
-            return d.get(key, default)
-        except Exception:
-            return default
-
-    def draw_section_title(y, titre):
-        pdf.setStrokeColor(bleu)
-        pdf.setLineWidth(1)
-        pdf.line(marge_g + 30, y - 2, width - marge_d - 10, y - 2)
-
-        pdf.setFillColor(bleu)
-        pdf.setFont("Helvetica-Bold", 11)
-        pdf.drawString(marge_g + 18, y, titre)
-
-    def draw_label_value(y, label, value, x_label=None, x_value=None):
-        if x_label is None:
-            x_label = marge_g + 18
-        if x_value is None:
-            x_value = marge_g + 188
-
-        pdf.setFillColor(noir)
-        pdf.setFont("Helvetica-Bold", 9)
-        pdf.drawString(x_label, y, str(label))
-
-        pdf.setFont("Helvetica", 9)
-        pdf.drawString(x_value, y, str(value))
-
-    def draw_info_box(y_top, h):
-        x = marge_g + 20
-        w = width / 2 - 35
-
-        pdf.setFillColor(colors.HexColor("#D8E0E8"))
-        pdf.setStrokeColor(colors.HexColor("#D8E0E8"))
-        pdf.roundRect(x, y_top - h, w, h, 8, fill=1, stroke=0)
-
-        pdf.setFillColor(noir)
-        pdf.setFont("Helvetica-Bold", 10)
-        pdf.drawString(x + 10, y_top - 16, "Informations du projet")
-
-        pdf.setFont("Helvetica", 9)
-        pdf.drawString(x + 10, y_top - 34, f"Numéro de projet : {numero_projet}")
-        pdf.drawString(
-            x + 10,
-            y_top - 52,
-            f"Client : {(prenom_client + ' ' + nom_client).strip() if (prenom_client or nom_client) else ''}"
-        )
-        pdf.drawString(
-            x + 10,
-            y_top - 70,
-            f"Adresse : {adresse_projet if adresse_projet else ''}"
-        )
-
-    def draw_parametres_box(y_top, h):
-        x = width / 2 + 10
-        w = width / 2 - marge_d - 35
-
-        pdf.setFillColor(colors.HexColor("#D8E0E8"))
-        pdf.setStrokeColor(colors.HexColor("#D8E0E8"))
-        pdf.roundRect(x, y_top - h, w, h, 8, fill=1, stroke=0)
-
-        pdf.setFillColor(noir)
-        pdf.setFont("Helvetica-Bold", 10)
-        pdf.drawString(x + 10, y_top - 16, "Paramètres du projet")
-
-        pdf.setFont("Helvetica", 9)
-        pdf.drawString(x + 10, y_top - 34, f"Puissance crête : {safe_get(data_import, 'puissance_crete', 0):.2f} kWc")
-        pdf.drawString(x + 10, y_top - 52, f"Mode de production : {safe_get(data_import, 'mode_prod', '-')}")
-        pdf.drawString(x + 10, y_top - 70, f"Mode de consommation : {safe_get(data_import, 'mode_conso', '-')}")
-        pdf.drawString(x + 10, y_top - 88, f"Augmentation production : {pct(safe_get(sidebar_data, 'augmentation_prod_pct', 0))}")
-
-    # ======================================================
-    # PAGE 1
-    # ======================================================
-
-    # Fond entête
-    pdf.setFillColor(bleu)
-    pdf.rect(0, height - 72, width, 72, fill=1, stroke=0)
-
-    # Logo
-    if logo_path.exists():
-        try:
-            pdf.drawImage(
-                str(logo_path),
-                6,
-                height - 42,
-                width=120,
-                height=28,
-                preserveAspectRatio=True,
-                mask='auto'
-            )
-        except Exception:
-            pass
-
-    # Titre
-    titre = "Rapport de simulation photovoltaïque"
-    pdf.setFillColor(colors.white)
-    pdf.setFont("Helvetica-Bold", 18)
-    largeur_titre = pdf.stringWidth(titre, "Helvetica-Bold", 18)
-    pdf.drawString((width - largeur_titre) / 2, height - 38, titre)
-
-    # Deux blocs côte à côte
-    draw_info_box(height - 102, 102)
-    draw_parametres_box(height - 102, 102)
-
-    y = height - 235
-
-    # 1. Résultats énergétiques
-    draw_section_title(y, "1. Résultats énergétiques")
-    y -= 24
-
-    total_prod = safe_get(indicateurs, "total_prod", 0)
-    total_import = safe_get(indicateurs, "total_import", 0)
-    total_export = safe_get(indicateurs, "total_export", 0)
-    total_ess = safe_get(indicateurs, "total_ess", 0)
-    taux_autoconso = safe_get(indicateurs, "taux_autoconso", 0)
-    taux_autonomie = safe_get(indicateurs, "taux_autonomie", 0)
-
-    x_gauche_label = marge_g + 18
-    x_gauche_val = marge_g + 145
-
-    x_droite_label = width / 2 + 10
-    x_droite_val = width / 2 + 145
-
-    draw_label_value(y, "Production PV", kwh(total_prod), x_gauche_label, x_gauche_val)
-    draw_label_value(y, "Export réseau", kwh(total_export), x_droite_label, x_droite_val)
-    y -= 18
-
-    draw_label_value(y, "Taux d'autoconsommation", pct(taux_autoconso), x_gauche_label, x_gauche_val)
-    draw_label_value(y, "Import réseau", kwh(total_import), x_droite_label, x_droite_val)
-    y -= 18
-
-    draw_label_value(y, "Via batterie", kwh(total_ess), x_gauche_label, x_gauche_val)
-    draw_label_value(y, "Taux d'autonomie", pct(taux_autonomie), x_droite_label, x_droite_val)
-    y -= 5
-
-
-    try:
-        img_prod = ImageReader(generer_graphique_repartition_production_pdf(mon_tableau))
-        pdf.drawImage(
-            img_prod,
-            85,
-            y - 150,
-            width=430,
-            height=135,
-            preserveAspectRatio=True,
-            mask='auto'
-        )
-    except Exception:
-        pdf.setFont("Helvetica", 10)
-        pdf.setFillColor(gris)
-        pdf.drawString(120, y - 80, "Graphique de production mensuelle indisponible")
-
-    y -= 185
-
-
-
-
-    # 2. Détail de la consommation
-    draw_section_title(y, "2. Détail de la consommation")
-    y -= 24
-
-    conso_base = safe_get(indicateurs, "total_conso_base", 0)
-    conso_borne = safe_get(indicateurs, "total_borne", 0)
-    conso_chauffe_eau = safe_get(indicateurs, "total_chauffe_eau", 0)
-    conso_pac = safe_get(indicateurs, "total_pac", 0)
-    conso_chauffage = safe_get(indicateurs, "total_chauffage", 0)
-
-    draw_label_value(y, "Consommation de base", kwh(conso_base))
-    y -= 18
-    draw_label_value(y, "Borne de recharge", kwh(conso_borne))
-    y -= 18
-    draw_label_value(y, "Chauffe-eau", kwh(conso_chauffe_eau))
-    y -= 18
-    draw_label_value(y, "Pompe à chaleur", kwh(conso_pac))
-    y -= 18
-    draw_label_value(y, "Chauffage électrique", kwh(conso_chauffage))
-    y -= 5
-
-
-
-    try:
-        img_bilan = ImageReader(generer_graphique_bilan_mensuel(mon_tableau))
-        pdf.drawImage(
-            img_bilan,
-            85,
-            y - 150,
-            width=430,
-            height=135,
-            preserveAspectRatio=True,
-            mask='auto'
-        )
-    except Exception:
-        pdf.setFont("Helvetica", 10)
-        pdf.setFillColor(gris)
-        pdf.drawString(120, y - 70, "Graphique de répartition mensuelle indisponible")
-
-
-
-
-
-    # ======================================================
-    # PAGE 2
-    # ======================================================
-    pdf.showPage()
-
-    y2 = height - 40
-
-    # 4. Budget
-    draw_section_title(y2, "4. Budget")
-    y2 -= 24
-    draw_label_value(y2, "Coût total brut", euro(safe_get(budget, "cout_total_brut", 0)))
-    y2 -= 18
-    draw_label_value(y2, "Aide totale", euro(safe_get(budget, "aide_totale", 0)))
-    y2 -= 18
-    draw_label_value(y2, "Coût net après aides", euro(safe_get(budget, "cout_total_net", 0)))
-    y2 -= 28
-
-    # 5. Analyse financière
-    draw_section_title(y2, "5. Analyse financière")
-    y2 -= 24
-    draw_label_value(y2, "Gain annuel PV", euro(safe_get(finance_pv, "gain_normal", 0)))
-    y2 -= 18
-    draw_label_value(
-        y2,
-        "ROI PV",
-        f"{safe_get(finance_pv, 'tr_normal', 0):.1f} ans"
-        if safe_get(finance_pv, "tr_normal", None) is not None
-        else "Non calculable"
-    )
-    y2 -= 18
-
-    if scenario_batterie_disponible and finance_pv_batt is not None:
-        draw_label_value(y2, "Gain annuel PV + batterie", euro(safe_get(finance_pv_batt, "gain_normal", 0)))
-        y2 -= 18
-        draw_label_value(
-            y2,
-            "ROI PV + batterie",
-            f"{safe_get(finance_pv_batt, 'tr_normal', 0):.1f} ans"
-            if safe_get(finance_pv_batt, "tr_normal", None) is not None
-            else "Non calculable"
-        )
-        y2 -= 28
-
-    # 6. Projection des gains cumulés
-    draw_section_title(y2, "6. Projection des gains cumulés")
-    y2 -= 18
-
-    try:
-        img_roi = ImageReader(
-            generer_graphique_roi(
-                finance_pv=finance_pv,
-                budget_pv=budget_pv,
-                finance_pv_batt=finance_pv_batt if scenario_batterie_disponible else None,
-                budget_pv_batt=budget_pv_batt if scenario_batterie_disponible else None,
-                gain_total_ems=gain_total_ems,
-                budget_pv_batt_ems=budget_pv_batt_ems
-            )
-        )
-        pdf.drawImage(
-            img_roi,
-            85,
-            y2 - 205,
-            width=430,
-            height=170,
-            preserveAspectRatio=True,
-            mask='auto'
-        )
-    except Exception:
-        pdf.setFont("Helvetica", 10)
-        pdf.setFillColor(gris)
-        pdf.drawString(120, y2 - 80, "Graphique des gains cumulés indisponible")
-
-    # Pied de page
-    pdf.setFillColor(gris)
-    pdf.setFont("Helvetica-Oblique", 7)
-    pdf.drawString(
-        marge_g + 8,
-        24,
-        "Rapport généré automatiquement par le simulateur photovoltaïque"
-    )
-
-    pdf.save()
-    buffer.seek(0)
-    return buffer
 
 def charger_projet_json(fichier_json):
     try:
@@ -1312,30 +716,82 @@ def charger_projet_json(fichier_json):
 
 
 
+def construire_donnees_projet(mon_tableau_pv=None):
+    projet = {
+        "format": "projet_pv_complet_v1",
 
-def construire_json_client(mon_tableau, data_import, sidebar_data):
-    df_export = mon_tableau[[
-        "Date&Time",
-        "Inverter Output",
-        "Consumption_base"
-    ]].copy()
+        "puissance_crete": st.session_state.get("puissance_crete", 10.0),
+        "augmentation_prod_pct": st.session_state.get("augmentation_prod_pct", 0.0),
 
-    df_export["Date&Time"] = df_export["Date&Time"].astype(str)
+        "borne_active": st.session_state.get("borne_active", False),
+        "puissance_borne_kw": st.session_state.get("puissance_borne_kw", 11.0),
+        "horaires_borne": st.session_state.get("horaires_borne", "18-20"),
+        "jours_selectionnes": st.session_state.get("jours_selectionnes", ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]),
 
-    projet_client = {
-        "puissance_crete": data_import["puissance_crete"],
-        "production_consommation_horaire": df_export.to_dict(orient="records"),
+        "chauffe_eau_actif": st.session_state.get("chauffe_eau_actif", False),
+        "puissance_chauffe_eau_kw": st.session_state.get("puissance_chauffe_eau_kw", 2.0),
+        "horaires_chauffe_eau": st.session_state.get("horaires_chauffe_eau", "6-8;18-20"),
+        "jours_chauffe_eau": st.session_state.get("jours_chauffe_eau", ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]),
 
-        "prix_electricite": st.session_state["prix_electricite"],
-        "prix_injection": st.session_state["prix_injection"],
-        "prix_communaute_achat": st.session_state["prix_communaute_achat"],
-        "prix_communaute_vente": st.session_state["prix_communaute_vente"],
+        "pac_active": st.session_state.get("pac_active", False),
+        "puissance_pac_kw": st.session_state.get("puissance_pac_kw", 2.5),
+        "horaires_pac": st.session_state.get("horaires_pac", "6-9;17-22"),
+        "jours_pac": st.session_state.get("jours_pac", ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]),
 
-        "aide_pv_active": st.session_state["aide_pv_active"],
-        "aide_batterie_active": st.session_state["aide_batterie_active"],
+        "chauffage_active": st.session_state.get("chauffage_active", False),
+        "puissance_chauffage_kw": st.session_state.get("puissance_chauffage_kw", 1.5),
+        "horaires_chauffage": st.session_state.get("horaires_chauffage", "6-8;19-22"),
+        "jours_chauffage": st.session_state.get("jours_chauffage", ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]),
+
+        "activer_batterie": st.session_state.get("activer_batterie", False),
+        "choix_batterie": st.session_state.get("choix_batterie", None),
+
+        "ems_actif": st.session_state.get("ems_actif", False),
+        "taux_ems": st.session_state.get("taux_ems", 25),
+
+        "aide_pv_active": st.session_state.get("aide_pv_active", True),
+        "aide_batterie_active": st.session_state.get("aide_batterie_active", True),
+
+        "cout_pv_par_wc": st.session_state.get("cout_pv_par_wc", 1.50),
+        "cout_batterie_par_wh": st.session_state.get("cout_batterie_par_wh", 0.75),
+        "cout_ems": st.session_state.get("cout_ems", 1500.0),
+
+        "prix_electricite": st.session_state.get("prix_electricite", 0.25),
+        "prix_injection": st.session_state.get("prix_injection", 0.05),
+        "prix_communaute_achat": st.session_state.get("prix_communaute_achat", 0.25),
+        "prix_communaute_vente": st.session_state.get("prix_communaute_vente", 0.15),
+
+        "mode_prod": st.session_state.get("mode_prod", "CSV SolarEdge"),
+        "mode_conso": st.session_state.get("mode_conso", "Profils types (Fichier CSV)"),
+        "prod_specifique": st.session_state.get("prod_specifique", 900.0),
+        "profil_choisi": st.session_state.get("profil_choisi", None),
     }
 
-    return projet_client
+    if mon_tableau_pv is not None:
+        df_export = mon_tableau_pv[[
+            "Date&Time",
+            "Inverter Output",
+            "Consumption_base"
+        ]].copy()
+
+        # On remet la production à sa valeur de base,
+        # car l'app client réappliquera ensuite augmentation_prod_pct.
+        augmentation_prod_pct = st.session_state.get("augmentation_prod_pct", 0.0)
+        facteur_augmentation = 1 + augmentation_prod_pct / 100
+
+        if facteur_augmentation > 0:
+            df_export["Inverter Output"] = df_export["Inverter Output"] / facteur_augmentation
+
+        df_export["Date&Time"] = df_export["Date&Time"].astype(str)
+
+        projet["production_consommation_horaire"] = df_export.to_dict(orient="records")
+
+    return projet
+
+
+
+
+
 
 
 
@@ -1613,6 +1069,12 @@ def creer_tableau_verification(mon_tableau, capa_wh):
         tableau_verification[col] = pd.to_numeric(tableau_verification[col], errors='coerce').fillna(0).round(2)
 
     return tableau_verification
+
+
+
+
+
+
 
 # ==========================================
 # CALCULS SYNTHÉTIQUES
@@ -4307,83 +3769,72 @@ def afficher_onglet_config(tab_config):
     with tab_config:
         st.header("Paramètres avancés")
 
-        if not st.session_state["acces_config"]:
-            mot_de_passe = st.text_input("Entrez le mot de passe", type="password")
+        # =====================================================
+        # HYPOTHÈSES ÉCONOMIQUES
+        # =====================================================
+        st.subheader("Hypothèses économiques")
 
-            if st.button("Valider le mot de passe"):
-                if mot_de_passe == MOT_DE_PASSE_CONFIG:
-                    st.session_state["acces_config"] = True
-                    st.success("Accès autorisé")
-                    st.rerun()
-                else:
-                    st.error("Mot de passe incorrect")
+        st.session_state["cout_pv_par_wc"] = st.number_input(
+            "Coût installation PV (€/Wc)",
+            min_value=0.0,
+            value=st.session_state["cout_pv_par_wc"],
+            step=0.05
+        )
 
-        else:
-            st.success("Accès autorisé aux paramètres avancés")
+        st.session_state["cout_batterie_par_wh"] = st.number_input(
+            "Coût batterie (€/Wh)",
+            min_value=0.0,
+            value=st.session_state["cout_batterie_par_wh"],
+            step=0.05
+        )
 
-            st.subheader("Hypothèses économiques")
+        st.session_state["cout_ems"] = st.number_input(
+            "Coût module EMS (€)",
+            min_value=0.0,
+            value=st.session_state["cout_ems"],
+            step=100.0
+        )
 
-            st.session_state["cout_pv_par_wc"] = st.number_input(
-                "Coût installation PV (€/Wc)",
-                min_value=0.0,
-                value=st.session_state["cout_pv_par_wc"],
-                step=0.05
-            )
+        st.markdown("---")
 
-            st.session_state["cout_batterie_par_wh"] = st.number_input(
-                "Coût batterie (€/Wh utile)",
-                min_value=0.0,
-                value=st.session_state["cout_batterie_par_wh"],
-                step=0.05
-            )
+        # =====================================================
+        # PARAMÈTRES ÉNERGIE
+        # =====================================================
+        st.subheader("Paramètres énergie")
+
+        st.session_state["prix_electricite"] = st.number_input(
+            "Prix achat électricité (€/kWh)",
+            min_value=0.0,
+            value=st.session_state["prix_electricite"],
+            step=0.01
+        )
+
+        st.session_state["prix_injection"] = st.number_input(
+            "Prix injection (€/kWh)",
+            min_value=0.0,
+            value=st.session_state["prix_injection"],
+            step=0.01
+        )
+
+        st.session_state["prix_communaute_achat"] = st.number_input(
+            "Prix d'achat communauté (€/kWh)",
+            min_value=0.0,
+            value=st.session_state["prix_communaute_achat"],
+            step=0.01
+        )
+
+        st.session_state["prix_communaute_vente"] = st.number_input(
+            "Prix de vente communauté (€/kWh)",
+            min_value=0.0,
+            value=st.session_state["prix_communaute_vente"],
+            step=0.01
+        )
 
 
-            st.session_state["cout_ems"] = st.number_input(
-                "Coût module EMS (€)",
-                min_value=0.0,
-                value=st.session_state["cout_ems"],
-                step=100.0
-            )
-
-
-            st.subheader("Paramètres énergie")
-
-            st.session_state["prix_electricite"] = st.number_input(
-                "Prix achat électricité (€/kWh)",
-                min_value=0.0,
-                value=st.session_state["prix_electricite"],
-                step=0.01
-            )
-
-            st.session_state["prix_injection"] = st.number_input(
-                "Prix injection (€/kWh)",
-                min_value=0.0,
-                value=st.session_state["prix_injection"],
-                step=0.01
-            )
-
-            st.session_state["prix_communaute_achat"] = st.number_input(
-                "Prix d'achat communauté (€/kWh)",
-                min_value=0.0,
-                value=st.session_state["prix_communaute_achat"],
-                step=0.01
-            )
-
-            st.session_state["prix_communaute_vente"] = st.number_input(
-                "Prix de vente communauté (€/kWh)",
-                min_value=0.0,
-                value=st.session_state["prix_communaute_vente"],
-                step=0.01
-            )
-
-            if st.button("Fermer l'accès"):
-                st.session_state["acces_config"] = False
-                st.rerun()
 
 # ==========================================
 # ONGLET SAUVEGARDE ET EXPORT
 # ==========================================
-
 def afficher_onglet_export(
     tab_export,
     data_import,
@@ -4403,43 +3854,21 @@ def afficher_onglet_export(
     with tab_export:
         st.subheader("Enregistrer un projet")
 
-        nom_projet = st.text_input("Nom du fichier projet", value="projet_simulation", key="nom_projet_export")
+        nom_projet = st.text_input(
+            "Nom du fichier projet",
+            value="projet_simulation",
+            key="nom_projet_export"
+        )
 
-        projet = construire_donnees_projet()
+        projet = construire_donnees_projet(mon_tableau_pv=mon_tableau_pv)
         projet_json = json.dumps(projet, ensure_ascii=False, indent=4)
 
         st.download_button(
-            label="Télécharger le projet (JSON)",
+            label="Télécharger le projet complet (JSON)",
             data=projet_json,
             file_name=f"{nom_projet}.json",
             mime="application/json"
-        
         )
-
-
-
-
-        projet_client = construire_json_client(
-            mon_tableau=mon_tableau,
-            data_import=data_import,
-            sidebar_data=sidebar_data
-        )
-
-        json_client = json.dumps(projet_client, ensure_ascii=False, indent=4)
-
-        st.download_button(
-            label="Télécharger le JSON client",
-            data=json_client,
-            file_name=f"{nom_projet}_client.json",
-            mime="application/json"
-        )
-
-
-
-
-
-
-
 
         st.markdown("""
         <div style="
@@ -4462,50 +3891,6 @@ def afficher_onglet_export(
             if st.button("Importer le projet", key="btn_import_projet"):
                 charger_projet_json(fichier_projet)
 
-
-        st.markdown("""
-        <div style="
-            height: 3px;
-            background: linear-gradient(90deg, transparent, #d7efff 3%, #4ea3e6 50%, #d7efff 97%, transparent);
-            border-radius: 999px;
-            margin: 5px 0 5px 0;
-        "></div>
-        """, unsafe_allow_html=True)
-        
-        st.subheader("Informations du rapport")
-
-        numero_projet = st.text_input("Numéro de projet", value="P-2026-001", key="numero_projet")
-        nom_client = st.text_input("Nom du client", value="", key="nom_client")
-        prenom_client = st.text_input("Prénom du client", value="", key="prenom_client")
-        adresse_projet = st.text_input("Adresse du projet", value="", key="adresse_projet")
-
-        st.subheader("Exporter un résumé PDF")
-
-        pdf_buffer = generer_pdf_resume(
-            data_import=data_import,
-            sidebar_data=sidebar_data,
-            indicateurs=indicateurs,
-            budget=budget,
-            finance_pv=finance_pv,
-            finance_pv_batt=finance_pv_batt,
-            scenario_batterie_disponible=scenario_batterie_disponible,
-            numero_projet=numero_projet,
-            nom_client=nom_client,
-            prenom_client=prenom_client,
-            adresse_projet=adresse_projet,
-            mon_tableau=mon_tableau,
-            budget_pv=budget_pv,
-            budget_pv_batt=budget_pv_batt,
-            budget_pv_batt_ems=budget_pv_batt_ems,
-            gain_total_ems=gain_total_ems
-        )
-
-        st.download_button(
-            label="Télécharger le résumé PDF",
-            data=pdf_buffer,
-            file_name=f"{nom_projet}_resume.pdf",
-            mime="application/pdf"
-        )
 
 
 
