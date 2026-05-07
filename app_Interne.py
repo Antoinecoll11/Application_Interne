@@ -3918,9 +3918,10 @@ def main():
 
         if "productions_mensuelles" in projet:
             mois_noms = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin",
-                     "Juil", "Aoû", "Sep", "Oct", "Nov", "Déc"]
-        for mois, val in zip(mois_noms, projet["productions_mensuelles"]):
-            st.session_state[f"prod_mois_{mois}"] = val
+                        "Juil", "Aoû", "Sep", "Oct", "Nov", "Déc"]
+
+            for mois, val in zip(mois_noms, projet["productions_mensuelles"]):
+                st.session_state[f"prod_mois_{mois}"] = val
 
 
 
