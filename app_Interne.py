@@ -39,6 +39,9 @@ def initialiser_session_state():
         "aide_pv_active": True,
         "aide_batterie_active": True,
         "cout_ems": 1500.0,
+        "commission_fournisseur_dynamique": 0.02,
+        "frais_reseau_dynamique": 0.10,
+        "taxes_dynamique": 0.05,
     }
     for cle, valeur in valeurs_defaut.items():
         if cle not in st.session_state:
@@ -694,9 +697,55 @@ def analyser_depassements_puissance(mon_tableau, puissance_reference_kw):
 
 
 
+def calculer_tarif_dynamique(mon_tableau, fichier_epex):
+    df_epex = pd.read_excel(fichier_epex)
 
+    # Colonne 1 = date/heure, colonne 2 = prix EPEX
+    df_epex["Date&Time"] = pd.to_datetime(df_epex.iloc[:, 0], errors="coerce")
+    df_epex["Prix_EPEX"] = pd.to_numeric(df_epex.iloc[:, 1], errors="coerce")
 
+    df_epex = df_epex.dropna(subset=["Date&Time", "Prix_EPEX"]).copy()
 
+    df = mon_tableau.copy()
+    df["Date&Time"] = pd.to_datetime(df["Date&Time"], errors="coerce")
+    df["Import_kWh"] = pd.to_numeric(df["Import_Reseau"], errors="coerce").fillna(0) / 1000
+
+    # Clé de correspondance sans tenir compte de l'année
+    df["cle_horaire"] = df["Date&Time"].dt.strftime("%m-%d %H")
+    df_epex["cle_horaire"] = df_epex["Date&Time"].dt.strftime("%m-%d %H")
+
+    df_calc = pd.merge(
+        df[["Date&Time", "cle_horaire", "Import_kWh"]],
+        df_epex[["cle_horaire", "Prix_EPEX"]],
+        on="cle_horaire",
+        how="left"
+    )
+
+    df_calc["Prix_EPEX"] = df_calc["Prix_EPEX"].fillna(0)
+
+    commission = st.session_state["commission_fournisseur_dynamique"]
+    frais_reseau = st.session_state["frais_reseau_dynamique"]
+    taxes = st.session_state["taxes_dynamique"]
+
+    df_calc["Prix_final_dynamique"] = (
+        df_calc["Prix_EPEX"]
+        + commission
+        + frais_reseau
+        + taxes
+    )
+
+    df_calc["Cout_horaire"] = df_calc["Import_kWh"] * df_calc["Prix_final_dynamique"]
+
+    cout_total_dynamique = df_calc["Cout_horaire"].sum()
+    import_total_kwh = df_calc["Import_kWh"].sum()
+    prix_moyen_final = df_calc["Prix_final_dynamique"].mean()
+
+    return {
+        "cout_total_dynamique": cout_total_dynamique,
+        "import_total_kwh": import_total_kwh,
+        "prix_moyen_final": prix_moyen_final,
+        "df_calc": df_calc
+    }
 
 # ==========================================
 # FONCTION SAUVEGARDE PDF
@@ -964,12 +1013,41 @@ def construire_tableau_principal(
 
 
     if pac_active:
-        mon_tableau["Conso_PAC"] = generer_profil_borne(
+        conso_pac_base = generer_profil_borne(
             mon_tableau["Date&Time"],
             puissance_borne_kw=puissance_pac_kw,
             horaires_borne=horaires_pac,
             jours_selectionnes=jours_pac
         )
+
+        coeffs_pac_mensuels = {
+            1: 1.40,
+            2: 1.30,
+            3: 1.10,
+            4: 0.80,
+            5: 0.40,
+            6: 0.20,
+            7: 0.10,
+            8: 0.10,
+            9: 0.30,
+            10: 0.70,
+            11: 1.10,
+            12: 1.40
+        }
+
+        coeff_pac = mon_tableau["Date&Time"].dt.month.map(coeffs_pac_mensuels).fillna(1.0)
+
+        conso_pac_modulee = conso_pac_base * coeff_pac
+
+        total_base = conso_pac_base.sum()
+        total_module = conso_pac_modulee.sum()
+
+        if total_module > 0:
+            facteur_correction = total_base / total_module
+            mon_tableau["Conso_PAC"] = conso_pac_modulee * facteur_correction
+        else:
+            mon_tableau["Conso_PAC"] = conso_pac_modulee
+
     else:
         mon_tableau["Conso_PAC"] = 0.0
 
@@ -2069,13 +2147,34 @@ def afficher_sidebar():
         key="pac_active"
     )
 
+
+
+    coeffs_pac_defaut = {
+        1: 1.40,   # janvier
+        2: 1.30,
+        3: 1.10,
+        4: 0.80,
+        5: 0.40,
+        6: 0.20,
+        7: 0.10,
+        8: 0.10,
+        9: 0.30,
+        10: 0.70,
+        11: 1.10,
+        12: 1.40
+    }
+
+
+
+
+
     puissance_pac_kw = 0.0
     horaires_pac = "6-9;17-22"
     jours_pac = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
 
     if pac_active:
         if "puissance_pac_kw" not in st.session_state:
-            st.session_state["puissance_pac_kw"] = 2.5
+            st.session_state["puissance_pac_kw"] = 1.5
 
         puissance_pac_kw = st.sidebar.number_input(
             "Puissance pompe à chaleur (kW)",
@@ -2084,7 +2183,7 @@ def afficher_sidebar():
             key="puissance_pac_kw"
         )
         if "horaires_pac" not in st.session_state:
-            st.session_state["horaires_pac"] = "6-8;17-21"
+            st.session_state["horaires_pac"] = "6-7;16-17;22-23"
 
         horaires_pac = st.sidebar.text_input(
             "Plage horaire PAC",
@@ -3761,6 +3860,92 @@ def afficher_onglet_finance(
             d5.metric("Solde annuel communauté", f"{finance['solde_communaute']:,.2f} €".replace(",", " "))
             d6.metric("Gain cumulé 10 ans", f"{finance['gain_10_ans_communaute']:,.2f} €".replace(",", " "))
 
+
+
+        st.markdown("""
+        <div style="
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #d7efff 3%, #4ea3e6 50%, #d7efff 97%, transparent);
+            border-radius: 999px;
+            margin: 5px 0 5px 0;
+        "></div>
+        """, unsafe_allow_html=True)
+
+        st.subheader("Scénario avec tarif dynamique (Prix Epex de 2025) ⚡")
+
+        fichier_epex = st.file_uploader(
+            "Importer le fichier EPEX horaire",
+            type=["xlsx", "csv"],
+            key="fichier_epex_dynamique"
+        )
+
+        if fichier_epex is not None:
+            try:
+                resultats_dyn = calculer_tarif_dynamique(mon_tableau, fichier_epex)
+
+                cout_dynamique = resultats_dyn["cout_total_dynamique"]
+                import_kwh = resultats_dyn["import_total_kwh"]
+                prix_moyen = resultats_dyn["prix_moyen_final"]
+
+                prix_fixe = st.session_state["prix_electricite"]
+
+                cout_import_fixe = import_kwh * prix_fixe
+
+                difference = cout_import_fixe - cout_dynamique
+
+                d1, d2, d3, d4, d5 = st.columns(5)
+
+                d1.metric(
+                    "Import réseau analysé",
+                    f"{import_kwh:,.0f} kWh".replace(",", " ")
+                )
+
+                d2.metric(
+                    "Prix moyen dynamique final",
+                    f"{prix_moyen:.3f} €/kWh"
+                )
+
+                d3.metric(
+                    "Coût avec tarif dynamique",
+                    f"{cout_dynamique:,.2f} €".replace(",", " ")
+                )
+
+                d4.metric(
+                    "Coût avec prix fixe",
+                    f"{cout_import_fixe:,.2f} €".replace(",", " ")
+                )
+
+                d5.metric(
+                    "Écart dynamique vs fixe",
+                    f"{difference:,.2f} €".replace(",", " "),
+                    delta=f"{difference:,.2f} €".replace(",", " ")
+                )
+
+                with st.expander("Détail horaire du calcul dynamique", expanded=False):
+                    st.dataframe(
+                        resultats_dyn["df_calc"],
+                        use_container_width=True,
+                        height=400
+                    )
+
+                st.write("Import réseau simulation :", mon_tableau["Import_Reseau"].sum() / 1000, "kWh")
+                st.write("Import réseau tarif dynamique :", resultats_dyn["import_total_kwh"], "kWh")
+
+            except Exception as e:
+                st.error(f"Erreur lors du calcul du tarif dynamique : {e}")
+        else:
+            st.info("Importez un fichier EPEX horaire pour calculer le coût avec tarif dynamique.")
+
+
+
+
+
+
+
+
+
+
+
 # ==========================================
 # ONGLET CONFIG
 # ==========================================
@@ -3828,6 +4013,37 @@ def afficher_onglet_config(tab_config):
             min_value=0.0,
             value=st.session_state["prix_communaute_vente"],
             step=0.01
+        )
+
+
+
+
+        st.markdown("---")
+
+        st.subheader("Hypothèses tarif dynamique")
+
+        st.session_state["commission_fournisseur_dynamique"] = st.number_input(
+            "Commission fournisseur dynamique (€/kWh)",
+            min_value=0.0,
+            value=st.session_state["commission_fournisseur_dynamique"],
+            step=0.001,
+            format="%.3f"
+        )
+
+        st.session_state["frais_reseau_dynamique"] = st.number_input(
+            "Frais réseau dynamique (€/kWh)",
+            min_value=0.0,
+            value=st.session_state["frais_reseau_dynamique"],
+            step=0.001,
+            format="%.3f"
+        )
+
+        st.session_state["taxes_dynamique"] = st.number_input(
+            "Taxes dynamique (€/kWh)",
+            min_value=0.0,
+            value=st.session_state["taxes_dynamique"],
+            step=0.001,
+            format="%.3f"
         )
 
 
