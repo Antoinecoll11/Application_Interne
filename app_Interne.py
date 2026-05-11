@@ -2193,12 +2193,12 @@ def afficher_sidebar():
         st.sidebar.caption(f"Charge par jour actif : {energie_jour_kwh:.1f} kWh")
         st.sidebar.caption(f"Charge par semaine : {energie_semaine_kwh:.1f} kWh")
 
-        km_equivalent = (energie_an_kwh / 15) * 100
+        km_equivalent = (energie_an_kwh / 20) * 100
 
         st.sidebar.success(
-            f"Consommation annuelle estimée : {energie_an_kwh:,.0f} kWh\n\n"
-            f"Équivalent : {km_equivalent:,.0f} km/an\n"
-            f"(base : 15 kWh / 100 km)".replace(",", " ")
+            f"Consommation annuelle estimée : {energie_an_kwh:,.0f} kWh  \n"
+            f"Équivalent : {km_equivalent:,.0f} km/an  \n"
+            f"(base : 20 kWh / 100 km)".replace(",", " ")
         )
 
 
