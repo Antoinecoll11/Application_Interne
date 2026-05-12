@@ -2248,12 +2248,32 @@ def afficher_sidebar():
         if "puissance_chauffe_eau_kw" not in st.session_state:
             st.session_state["puissance_chauffe_eau_kw"] = 1.5
 
-        puissance_chauffe_eau_kw = st.sidebar.number_input(
-            "Puissance chauffe-eau (kW)",
-            min_value=0.5,
-            step=0.1,
-            key="puissance_chauffe_eau_kw"
+        puissances_chauffe_eau = [1.2, 1.8, 2.2, 3.0, 6.0]
+
+        mode_puissance_chauffe_eau = st.sidebar.selectbox(
+            "Puissance chauffe-eau",
+            [f"{p:.1f} kW" for p in puissances_chauffe_eau] + ["Personnalisé"]
         )
+
+        if mode_puissance_chauffe_eau == "Personnalisé":
+
+            if "puissance_chauffe_eau_kw" not in st.session_state:
+                st.session_state["puissance_chauffe_eau_kw"] = 2.2
+
+            puissance_chauffe_eau_kw = st.sidebar.number_input(
+                "Puissance personnalisée (kW)",
+                min_value=0.1,
+                step=0.1,
+                key="puissance_chauffe_eau_kw"
+            )
+
+        else:
+            puissance_chauffe_eau_kw = float(
+                mode_puissance_chauffe_eau.replace(" kW", "")
+            )
+
+            st.session_state["puissance_chauffe_eau_kw"] = puissance_chauffe_eau_kw
+
 
         if "horaires_chauffe_eau" not in st.session_state:
             st.session_state["horaires_chauffe_eau"] = "11-13"
