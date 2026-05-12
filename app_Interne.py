@@ -954,6 +954,7 @@ def construire_tableau_principal(
     puiss_w,
     colonne_prod,
     coeffs_pac_mensuels=None,
+    mois_chauffage_actifs=None,
 ):
 
     mon_tableau = charger_production(
@@ -1060,15 +1061,28 @@ def construire_tableau_principal(
     else:
         mon_tableau["Conso_PAC"] = 0.0
 
-    if chauffage_active:
-        mon_tableau["Conso_Chauffage"] = generer_profil_borne(
-            mon_tableau["Date&Time"],
-            puissance_borne_kw=puissance_chauffage_kw,
-            horaires_borne=horaires_chauffage,
-            jours_selectionnes=jours_chauffage
-        )
-    else:
-        mon_tableau["Conso_Chauffage"] = 0.0
+    mon_tableau["Conso_Chauffage"] = generer_profil_borne(
+        mon_tableau["Date&Time"],
+        puissance_chauffage_kw,
+        horaires_chauffage,
+        jours_chauffage
+    )
+
+    if mois_chauffage_actifs is None:
+        mois_chauffage_actifs = ["Jan", "Fév", "Mar", "Avr", "Oct", "Nov", "Déc"]
+
+    mois_map = {
+        "Jan": 1, "Fév": 2, "Mar": 3, "Avr": 4,
+        "Mai": 5, "Juin": 6, "Juil": 7, "Aoû": 8,
+        "Sep": 9, "Oct": 10, "Nov": 11, "Déc": 12
+    }
+
+    mois_actifs_num = [mois_map[m] for m in mois_chauffage_actifs]
+
+    mon_tableau.loc[
+        ~mon_tableau["Date&Time"].dt.month.isin(mois_actifs_num),
+        "Conso_Chauffage"
+    ] = 0.0
 
 
 
@@ -2458,6 +2472,21 @@ def afficher_sidebar():
             key="jours_chauffage"
         )
 
+        mois_noms_chauffage = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Aoû", "Sep", "Oct", "Nov", "Déc"]
+
+        if "mois_chauffage_actifs" not in st.session_state:
+            st.session_state["mois_chauffage_actifs"] = ["Jan", "Fév", "Mar", "Avr", "Oct", "Nov", "Déc"]
+
+        mois_chauffage_actifs = st.sidebar.multiselect(
+            "Mois d'utilisation du chauffage",
+            mois_noms_chauffage,
+            key="mois_chauffage_actifs"
+)
+
+
+
+
+
 
 
 
@@ -2561,6 +2590,10 @@ def afficher_sidebar():
         "coeffs_pac_mensuels": st.session_state.get(
             "coeffs_pac_mensuels",
             [1.40, 1.30, 1.10, 0.80, 0.40, 0.20, 0.10, 0.10, 0.30, 0.70, 1.10, 1.40]
+        ),
+        "mois_chauffage_actifs": st.session_state.get(
+            "mois_chauffage_actifs",
+            ["Jan", "Fév", "Mar", "Avr", "Oct", "Nov", "Déc"]
         ),
     }
 
@@ -4655,7 +4688,8 @@ def main():
         horaires_chauffage=sidebar_data["horaires_chauffage"],
         jours_chauffage=sidebar_data["jours_chauffage"],
         capa_wh=sidebar_data["capa_wh"],
-        puiss_w=sidebar_data["puiss_w"]
+        puiss_w=sidebar_data["puiss_w"],
+        mois_chauffage_actifs=sidebar_data["mois_chauffage_actifs"]
     )
 
     indicateurs = calculer_indicateurs_annuels(mon_tableau, sidebar_data["capa_wh"])
