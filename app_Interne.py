@@ -2261,6 +2261,52 @@ def afficher_sidebar():
 
 
 
+        heures_chauffe_eau_par_jour = duree_totale_horaires(horaires_chauffe_eau)
+
+        energie_chauffe_eau_jour_kwh = puissance_chauffe_eau_kw * heures_chauffe_eau_par_jour
+        energie_chauffe_eau_semaine_kwh = energie_chauffe_eau_jour_kwh * len(jours_chauffe_eau)
+        energie_chauffe_eau_an_kwh = energie_chauffe_eau_semaine_kwh * 52
+
+        references_personnes = {
+            1: 725,
+            2: 1475,
+            3: 2200,
+            4: 2925,
+            5: 3625,
+            6: 4250
+        }
+
+        personnes_equivalent = min(
+            references_personnes,
+            key=lambda p: abs(references_personnes[p] - energie_chauffe_eau_an_kwh)
+        )
+
+        litres_equivalent = {
+            1: 50,
+            2: 100,
+            3: 150,
+            4: 200,
+            5: 250,
+            6: 300
+        }
+
+        st.sidebar.caption(
+            f"Consommation annuelle estimée : {energie_chauffe_eau_an_kwh:,.0f} kWh".replace(",", " ")
+        )
+
+        st.sidebar.success(
+            f"Équivalent : environ {personnes_equivalent} personne(s)\n\n"
+            f"Ballon indicatif : ± {litres_equivalent[personnes_equivalent]} L"
+        )
+
+
+
+
+
+
+
+
+
 
     st.sidebar.markdown("""
     <div style="
