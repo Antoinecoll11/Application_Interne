@@ -2329,10 +2329,11 @@ def afficher_sidebar():
         )
 
         st.sidebar.success(
+            f"Consommation annuelle estimée : {energie_chauffe_eau_an_kwh:,.0f} kWh/an\n\n"
             f"Équivalent : environ {personnes_equivalent} personne(s)\n\n"
             f"Ballon indicatif : ± {litres_equivalent[personnes_equivalent]} L"
+            .replace(",", " ")
         )
-
 
 
 
