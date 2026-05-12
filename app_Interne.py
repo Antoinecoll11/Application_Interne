@@ -2519,9 +2519,20 @@ def afficher_sidebar():
             "Mois d'utilisation du chauffage",
             mois_noms_chauffage,
             key="mois_chauffage_actifs"
-)
+        )
 
+        heures_chauffage_par_jour = duree_totale_horaires(horaires_chauffage)
 
+        energie_chauffage_jour_kwh = puissance_chauffage_kw * heures_chauffage_par_jour
+        energie_chauffage_semaine_kwh = energie_chauffage_jour_kwh * len(jours_chauffage)
+
+        nb_mois_actifs = len(mois_chauffage_actifs)
+        energie_chauffage_an_kwh = energie_chauffage_semaine_kwh * 52 * (nb_mois_actifs / 12)
+
+        st.sidebar.success(
+            f"Consommation chauffage estimée : {energie_chauffage_an_kwh:,.0f} kWh/an"
+            .replace(",", " ")
+        )
 
 
 
