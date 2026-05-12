@@ -2282,12 +2282,12 @@ def afficher_sidebar():
         energie_chauffe_eau_an_kwh = energie_chauffe_eau_semaine_kwh * 52
 
         references_personnes = {
-            1: 725,
-            2: 1475,
-            3: 2200,
-            4: 2925,
-            5: 3625,
-            6: 4250
+            1: 800,
+            2: 1600,
+            3: 2400,
+            4: 3200,
+            5: 4000,
+            6: 4800
         }
 
         personnes_equivalent = min(
