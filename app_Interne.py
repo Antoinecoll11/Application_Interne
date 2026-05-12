@@ -2454,6 +2454,8 @@ def afficher_sidebar():
     "></div>
     """, unsafe_allow_html=True)
     st.sidebar.subheader("Chauffage électrique ♨️")
+
+
     if "chauffage_active" not in st.session_state:
         st.session_state["chauffage_active"] = False
 
@@ -2469,13 +2471,28 @@ def afficher_sidebar():
         if "puissance_chauffage_kw" not in st.session_state:
             st.session_state["puissance_chauffage_kw"] = 1.5
 
-        puissance_chauffage_kw = st.sidebar.number_input(
-            "Puissance chauffage électrique (kW)",
-            min_value=0.5,
-            step=0.1,
-            key="puissance_chauffage_kw"
+        puissances_chauffage = [0.75, 1.0, 1.5, 2.0, 2.5, 3.0]
+
+        mode_puissance_chauffage = st.sidebar.selectbox(
+            "Puissance chauffage électrique",
+            [f"{int(p * 1000)} W" for p in puissances_chauffage] + ["Personnalisé"]
         )
 
+        if mode_puissance_chauffage == "Personnalisé":
+
+            puissance_chauffage_kw = st.sidebar.number_input(
+                "Puissance personnalisée (kW)",
+                min_value=0.1,
+                step=0.1,
+                key="puissance_chauffage_kw"
+            )
+
+        else:
+            puissance_chauffage_kw = (
+                int(mode_puissance_chauffage.replace(" W", "")) / 1000
+            )
+
+            st.session_state["puissance_chauffage_kw"] = puissance_chauffage_kw
         if "horaires_chauffage" not in st.session_state:
             st.session_state["horaires_chauffage"] = "6-8;19-22"
 
