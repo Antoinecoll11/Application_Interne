@@ -1402,9 +1402,9 @@ def calculer_analyse_financiere(mon_tableau, cout_total_net, cout_om_annuel=0.0)
     tr_communaute = (cout_total_net / gain_communaute) if gain_communaute > 0 else None
 
 
-    _, gain_cumule_10_normal = calculer_gains_cumules_avec_croissance(gain_normal, nb_annees=10)
-    _, gain_cumule_10_mix = calculer_gains_cumules_avec_croissance(gain_mix, nb_annees=10)
-    _, gain_cumule_10_communaute = calculer_gains_cumules_avec_croissance(gain_communaute, nb_annees=10)
+    _, gain_cumule_10_normal = calculer_gains_cumules_avec_croissance(gain_normal, nb_annees=20)
+    _, gain_cumule_10_mix = calculer_gains_cumules_avec_croissance(gain_mix, nb_annees=20)
+    _, gain_cumule_10_communaute = calculer_gains_cumules_avec_croissance(gain_communaute, nb_annees=20)
 
     return {
         "prix_electricite": prix_electricite,
@@ -1460,7 +1460,7 @@ def calculer_analyse_financiere(mon_tableau, cout_total_net, cout_om_annuel=0.0)
 
 def calculer_gains_cumules_avec_croissance(
     gain_annuel_initial,
-    nb_annees=15,
+    nb_annees=20,
     part_batterie=0.0
 ):
     taux_croissance = st.session_state.get("taux_croissance_elec_annuel", 0.0) / 100
@@ -3850,7 +3850,7 @@ def afficher_onglet_finance(
 
 
 
-        nb_annees_roi = 15
+        nb_annees_roi = 20
         annees_roi = np.arange(1, nb_annees_roi + 1)
 
         _, gains_cumules_pv = calculer_gains_cumules_avec_croissance(
@@ -4098,22 +4098,30 @@ def afficher_onglet_finance(
 
 
 
-        nb_annees = 15
+        nb_annees = 20
         annees = np.arange(1, nb_annees + 1)
+
+        part_batterie_communaute = (
+            finance["economie_batterie"] / finance["gain_normal"]
+            if finance["gain_normal"] > 0 else 0.0
+        )
 
         _, gains_cumules_normal = calculer_gains_cumules_avec_croissance(
             finance["gain_normal"],
-            nb_annees
+            nb_annees,
+            part_batterie=part_batterie_communaute
         )
 
         _, gains_cumules_mix = calculer_gains_cumules_avec_croissance(
             finance["gain_mix"],
-            nb_annees
+            nb_annees,
+            part_batterie=part_batterie_communaute
         )
 
         _, gains_cumules_communaute = calculer_gains_cumules_avec_croissance(
             finance["gain_communaute"],
-            nb_annees
+            nb_annees,
+            part_batterie=part_batterie_communaute
         )
 
         roi_normal_projete = calculer_roi_depuis_gains_cumules(
