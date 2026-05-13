@@ -2302,12 +2302,12 @@ def afficher_sidebar():
         energie_chauffe_eau_an_kwh = energie_chauffe_eau_semaine_kwh * 52
 
         references_personnes = {
-            1: 800,
-            2: 1600,
-            3: 2400,
-            4: 3200,
-            5: 4000,
-            6: 4800
+            1: 848,
+            2: 1697,
+            3: 2545,
+            4: 3393,
+            5: 4240,
+            6: 5090
         }
 
         personnes_equivalent = min(
@@ -4417,7 +4417,10 @@ def afficher_onglet_config(tab_config):
         options_cout_batterie = {
             "Batterie 5 kWh — 1.70 €/Wh": 1.70,
             "Batterie 7 kWh — 1.18 €/Wh": 1.18,
-            "Batterie 10 ou 17 kWh — 1.00 €/Wh": 1.00,
+            "Batterie 10 kWh — 1.00 €/Wh": 1.00,
+            "Batterie 12 kWh — 1.00 €/Wh": 1.00,
+            "Batterie 14 kWh — 1.00 €/Wh": 1.00,
+            "Batterie 15 à 21 kWh — 0.00 €/Wh": 0.00,
             "Valeur standard — 1.00 €/Wh": 1.00,
         }
 
