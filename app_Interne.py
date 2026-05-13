@@ -1338,13 +1338,25 @@ def calculer_analyse_financiere(mon_tableau, cout_total_net, cout_om_annuel=0.0)
     cout_import_normal = round(total_import_kwh * prix_electricite, 2)
     revenu_export_normal = round(total_export_kwh * prix_injection, 2)
     solde_normal = round(cout_import_normal - revenu_export_normal, 2)
-    gain_normal_avant_om = round(cout_sans_installation - solde_normal, 2)
+
+
+
+    gain_normal_avant_om = round(
+        cout_sans_installation
+        - solde_normal
+        + economie_batterie,
+        2
+    )
 
     cout_import_communaute = round(total_import_kwh * prix_communaute_achat, 2)
     revenu_export_communaute = round(total_export_kwh * prix_communaute_vente, 2)
     solde_communaute = round(cout_import_communaute - revenu_export_communaute, 2)
-    gain_communaute_avant_om = round(cout_sans_installation - solde_communaute, 2)
-
+    gain_communaute_avant_om = round(
+        cout_sans_installation
+        - solde_communaute
+        + economie_batterie,
+        2
+    )
     cout_import_mix = round(
         0.5 * total_import_kwh * prix_communaute_achat
         + 0.5 * total_import_kwh * prix_electricite,
@@ -1358,7 +1370,12 @@ def calculer_analyse_financiere(mon_tableau, cout_total_net, cout_om_annuel=0.0)
     )
 
     solde_mix = round(cout_import_mix - revenu_export_mix, 2)
-    gain_mix_avant_om = round(cout_sans_installation - solde_mix, 2)
+    gain_mix_avant_om = round(
+        cout_sans_installation
+        - solde_mix
+        + economie_batterie,
+        2
+    )
 
 
 
