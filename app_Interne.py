@@ -4420,7 +4420,7 @@ def afficher_onglet_config(tab_config):
             "Batterie 10 kWh — 1.00 €/Wh": 1.00,
             "Batterie 12 kWh — 1.00 €/Wh": 1.00,
             "Batterie 14 kWh — 1.00 €/Wh": 1.00,
-            "Batterie 15 à 21 kWh — 0.00 €/Wh": 0.90,
+            "Batterie 15 à 21 kWh — 0.90 €/Wh": 0.90,
             "Valeur standard — 1.00 €/Wh": 1.00,
         }
 
