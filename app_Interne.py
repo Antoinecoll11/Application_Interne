@@ -42,12 +42,12 @@ def initialiser_session_state():
         "commission_fournisseur_dynamique": 0.02,
         "frais_reseau_dynamique": 0.10,
         "taxes_dynamique": 0.05,
-        "taux_croissance_elec_annuel": 0.0,
+        "taux_croissance_elec_annuel": 3.0,
         "cout_om_pv_par_wc_an": 0.0,
         "cout_om_batterie_par_wh_an": 0.0,
         "subside_supplementaire": 0.0,
-        "perte_pv_annuelle": 0.0,
-        "perte_batterie_annuelle": 0.0,
+        "perte_pv_annuelle": 0.5,
+        "perte_batterie_annuelle": 0.5,
         "prix_electricite_batterie": 0.27,
     }
     for cle, valeur in valeurs_defaut.items():
@@ -1402,9 +1402,26 @@ def calculer_analyse_financiere(mon_tableau, cout_total_net, cout_om_annuel=0.0)
     tr_communaute = (cout_total_net / gain_communaute) if gain_communaute > 0 else None
 
 
-    _, gain_cumule_20_normal = calculer_gains_cumules_avec_croissance(gain_normal, nb_annees=20)
-    _, gain_cumule_20_mix = calculer_gains_cumules_avec_croissance(gain_mix, nb_annees=20)
-    _, gain_cumule_20_communaute = calculer_gains_cumules_avec_croissance(gain_communaute, nb_annees=20)
+    _, gain_cumule_20_normal = calculer_gains_cumules_projection(
+        economie_auto_directe=economie_auto_directe,
+        economie_batterie=economie_batterie,
+        revenu_export=revenu_export_normal,
+        nb_annees=20
+    )
+
+    _, gain_cumule_20_mix = calculer_gains_cumules_projection(
+        economie_auto_directe=economie_auto_directe,
+        economie_batterie=economie_batterie,
+        revenu_export=revenu_export_mix,
+        nb_annees=20
+    )
+
+    _, gain_cumule_20_communaute = calculer_gains_cumules_projection(
+        economie_auto_directe=economie_auto_directe,
+        economie_batterie=economie_batterie,
+        revenu_export=revenu_export_communaute,
+        nb_annees=20
+    )
 
     return {
         "prix_electricite": prix_electricite,
@@ -1458,10 +1475,12 @@ def calculer_analyse_financiere(mon_tableau, cout_total_net, cout_om_annuel=0.0)
         "prix_electricite_batterie": prix_electricite_batterie,
     }
 
-def calculer_gains_cumules_avec_croissance(
-    gain_annuel_initial,
-    nb_annees=20,
-    part_batterie=0.0
+def calculer_gains_cumules_projection(
+    economie_auto_directe=0.0,
+    economie_batterie=0.0,
+    revenu_export=0.0,
+    gain_autre=0.0,
+    nb_annees=20
 ):
     taux_croissance = st.session_state.get("taux_croissance_elec_annuel", 0.0) / 100
     perte_pv = st.session_state.get("perte_pv_annuelle", 0.0) / 100
@@ -1477,13 +1496,12 @@ def calculer_gains_cumules_avec_croissance(
         facteur_pv = (1 - perte_pv) ** annee
         facteur_batterie = (1 - perte_batterie) ** annee
 
-        gain_pv = gain_annuel_initial * (1 - part_batterie)
-        gain_batterie = gain_annuel_initial * part_batterie
-
         gain_annee = (
-            gain_pv * facteur_pv
-            + gain_batterie * facteur_pv * facteur_batterie
-        ) * facteur_prix
+            economie_auto_directe * facteur_prix * facteur_pv
+            + economie_batterie * facteur_prix * facteur_batterie
+            + revenu_export * facteur_pv
+            + gain_autre * facteur_prix
+        )
 
         cumul += gain_annee
 
@@ -1491,6 +1509,8 @@ def calculer_gains_cumules_avec_croissance(
         gains_cumules.append(cumul)
 
     return np.array(gains_annuels), np.array(gains_cumules)
+
+
 
 def calculer_roi_depuis_gains_cumules(cout_net, gains_cumules):
     gains_cumules = np.asarray(gains_cumules, dtype=float)
@@ -3599,12 +3619,18 @@ def afficher_onglet_finance(
         
         with st.expander("⚙️ Hypothèses de calcul", expanded=False):
             h1, h2, h3, h4 = st.columns(4)
+
             h1.metric("Prix achat réseau", f"{finance['prix_electricite']:.2f} €/kWh")
-            h2.metric("Prix vente réseau", f"{finance['prix_injection']:.2f} €/kWh")
-            h3.metric("Prix achat communauté", f"{finance['prix_communaute_achat']:.2f} €/kWh")
-            h4.metric("Prix vente communauté", f"{finance['prix_communaute_vente']:.2f} €/kWh")
-       
-       
+            h2.metric("Prix batterie", f"{finance['prix_electricite_batterie']:.2f} €/kWh")
+            h3.metric("Prix vente réseau", f"{finance['prix_injection']:.2f} €/kWh")
+            h4.metric("Croissance prix élec.", f"{st.session_state['taux_croissance_elec_annuel']:.1f} %/an")
+
+            h5, h6, h7, h8 = st.columns(4)
+
+            h5.metric("Prix achat communauté", f"{finance['prix_communaute_achat']:.2f} €/kWh")
+            h6.metric("Prix vente communauté", f"{finance['prix_communaute_vente']:.2f} €/kWh")
+            h7.metric("Perte PV", f"{st.session_state['perte_pv_annuelle']:.1f} %/an")
+            h8.metric("Perte batterie", f"{st.session_state['perte_batterie_annuelle']:.1f} %/an")
        
         st.markdown("""
         <div style="
@@ -3853,9 +3879,11 @@ def afficher_onglet_finance(
         nb_annees_roi = 20
         annees_roi = np.arange(1, nb_annees_roi + 1)
 
-        _, gains_cumules_pv = calculer_gains_cumules_avec_croissance(
-            finance_pv["gain_normal"],
-            nb_annees_roi
+        _, gains_cumules_pv = calculer_gains_cumules_projection(
+            economie_auto_directe=finance_pv["economie_auto_directe"],
+            economie_batterie=0.0,
+            revenu_export=finance_pv["revenu_export_normal"],
+            nb_annees=nb_annees_roi
         )
 
         cout_net_pv = budget_pv["cout_total_net"]
@@ -3891,10 +3919,11 @@ def afficher_onglet_finance(
                 if finance_pv_batt["gain_normal"] > 0 else 0.0
             )
 
-            _, gains_cumules_pv_batt = calculer_gains_cumules_avec_croissance(
-                finance_pv_batt["gain_normal"],
-                nb_annees_roi,
-                part_batterie=part_batterie
+            _, gains_cumules_pv_batt = calculer_gains_cumules_projection(
+                economie_auto_directe=finance_pv_batt["economie_auto_directe"],
+                economie_batterie=finance_pv_batt["economie_batterie"],
+                revenu_export=finance_pv_batt["revenu_export_normal"],
+                nb_annees=nb_annees_roi
             )
 
             cout_net_pv_batt = budget_pv_batt["cout_total_net"]
@@ -3921,10 +3950,14 @@ def afficher_onglet_finance(
         if resultats_ems is not None and budget_pv_batt_ems is not None and gain_total_ems is not None:
             
             
-            _, gains_cumules_ems = calculer_gains_cumules_avec_croissance(
-                gain_total_ems,
-                nb_annees_roi,
-                part_batterie=part_batterie
+            gain_ems_seul = resultats_ems.get("gain_ems", 0.0)
+
+            _, gains_cumules_ems = calculer_gains_cumules_projection(
+                economie_auto_directe=finance_pv_batt["economie_auto_directe"],
+                economie_batterie=finance_pv_batt["economie_batterie"],
+                revenu_export=resultats_ems["revenu_export_ems"],
+                gain_autre=gain_ems_seul,
+                nb_annees=nb_annees_roi
             )
 
 
@@ -4106,22 +4139,25 @@ def afficher_onglet_finance(
             if finance["gain_normal"] > 0 else 0.0
         )
 
-        _, gains_cumules_normal = calculer_gains_cumules_avec_croissance(
-            finance["gain_normal"],
-            nb_annees,
-            part_batterie=part_batterie_communaute
+        _, gains_cumules_normal = calculer_gains_cumules_projection(
+            economie_auto_directe=finance["economie_auto_directe"],
+            economie_batterie=finance["economie_batterie"],
+            revenu_export=finance["revenu_export_normal"],
+            nb_annees=nb_annees
         )
 
-        _, gains_cumules_mix = calculer_gains_cumules_avec_croissance(
-            finance["gain_mix"],
-            nb_annees,
-            part_batterie=part_batterie_communaute
+        _, gains_cumules_mix = calculer_gains_cumules_projection(
+            economie_auto_directe=finance["economie_auto_directe"],
+            economie_batterie=finance["economie_batterie"],
+            revenu_export=finance["revenu_export_mix"],
+            nb_annees=nb_annees
         )
 
-        _, gains_cumules_communaute = calculer_gains_cumules_avec_croissance(
-            finance["gain_communaute"],
-            nb_annees,
-            part_batterie=part_batterie_communaute
+        _, gains_cumules_communaute = calculer_gains_cumules_projection(
+            economie_auto_directe=finance["economie_auto_directe"],
+            economie_batterie=finance["economie_batterie"],
+            revenu_export=finance["revenu_export_communaute"],
+            nb_annees=nb_annees
         )
 
         roi_normal_projete = calculer_roi_depuis_gains_cumules(
