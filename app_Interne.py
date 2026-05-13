@@ -4173,7 +4173,7 @@ def afficher_onglet_finance(
                 </div>
 
                 <div style="font-size:14px; color:#506070; line-height:1.5;">
-                    Gain cumulé à 10 ans : <strong>{f"{finance['gain_20_ans_normal']:,.2f} €".replace(",", " ")}</strong>
+                    Gain cumulé à 20 ans : <strong>{f"{finance['gain_20_ans_normal']:,.2f} €".replace(",", " ")}</strong>
                 </div>
 
                 <div style="font-size:14px; color:#506070; line-height:1.5;">
@@ -4213,7 +4213,7 @@ def afficher_onglet_finance(
 
 
                 <div style="font-size:14px; color:#506070; line-height:1.5;">
-                    Gain cumulé à 10 ans : <strong>{f"{finance['gain_20_ans_mix']:,.2f} €".replace(",", " ")}</strong>
+                    Gain cumulé à 20 ans : <strong>{f"{finance['gain_20_ans_mix']:,.2f} €".replace(",", " ")}</strong>
                 </div>
             </div>
             """, height=220)
@@ -4247,7 +4247,7 @@ def afficher_onglet_finance(
 
 
                 <div style="font-size:14px; color:#506070; line-height:1.5;">
-                    Gain cumulé à 10 ans : <strong>{f"{finance['gain_20_ans_communaute']:,.2f} €".replace(",", " ")}</strong>
+                    Gain cumulé à 20 ans : <strong>{f"{finance['gain_20_ans_communaute']:,.2f} €".replace(",", " ")}</strong>
                 </div>
             </div>
             """, height=220)
@@ -4323,7 +4323,7 @@ def afficher_onglet_finance(
 
             e5, e6 = st.columns(2)
             e5.metric("Solde annuel mixte", f"{finance['solde_mix']:,.2f} €".replace(",", " "))
-            e6.metric("Gain cumulé 10 ans", f"{finance['gain_20_ans_mix']:,.2f} €".replace(",", " "))
+            e6.metric("Gain cumulé 20 ans", f"{finance['gain_20_ans_mix']:,.2f} €".replace(",", " "))
 
         with st.expander("📙 Détail – Communauté", expanded=False):
             d1, d2, d3, d4 = st.columns(4)
@@ -4334,7 +4334,7 @@ def afficher_onglet_finance(
 
             d5, d6 = st.columns(2)
             d5.metric("Solde annuel communauté", f"{finance['solde_communaute']:,.2f} €".replace(",", " "))
-            d6.metric("Gain cumulé 10 ans", f"{finance['gain_20_ans_communaute']:,.2f} €".replace(",", " "))
+            d6.metric("Gain cumulé 20 ans", f"{finance['gain_20_ans_communaute']:,.2f} €".replace(",", " "))
 
 
 
