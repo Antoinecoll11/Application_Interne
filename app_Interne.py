@@ -48,6 +48,7 @@ def initialiser_session_state():
         "subside_supplementaire": 0.0,
         "perte_pv_annuelle": 0.0,
         "perte_batterie_annuelle": 0.0,
+        "prix_electricite_batterie": 0.27,
     }
     for cle, valeur in valeurs_defaut.items():
         if cle not in st.session_state:
@@ -1317,6 +1318,7 @@ def calculer_budget(puissance_crete, activer_batterie, capa_kwh, capa_wh, aide_p
     }
 
 def calculer_analyse_financiere(mon_tableau, cout_total_net, cout_om_annuel=0.0):
+    prix_electricite_batterie = st.session_state["prix_electricite_batterie"]
     prix_electricite = st.session_state["prix_electricite"]
     prix_injection = st.session_state["prix_injection"]
     prix_communaute_achat = st.session_state["prix_communaute_achat"]
@@ -1331,7 +1333,7 @@ def calculer_analyse_financiere(mon_tableau, cout_total_net, cout_om_annuel=0.0)
     cout_sans_installation = round(total_conso_kwh * prix_electricite, 2)
 
     economie_auto_directe = round(total_auto_directe_kwh * prix_electricite, 2)
-    economie_batterie = round(total_batterie_kwh * prix_electricite, 2)
+    economie_batterie = round(total_batterie_kwh * prix_electricite_batterie, 2)
 
     cout_import_normal = round(total_import_kwh * prix_electricite, 2)
     revenu_export_normal = round(total_export_kwh * prix_injection, 2)
@@ -1436,6 +1438,7 @@ def calculer_analyse_financiere(mon_tableau, cout_total_net, cout_om_annuel=0.0)
         "gain_10_ans_normal": round(float(np.asarray(gain_cumule_10_normal).ravel()[-1]), 2),
         "gain_10_ans_mix": round(float(np.asarray(gain_cumule_10_mix).ravel()[-1]), 2),
         "gain_10_ans_communaute": round(float(np.asarray(gain_cumule_10_communaute).ravel()[-1]), 2),
+        "prix_electricite_batterie": prix_electricite_batterie,
     }
 
 def calculer_gains_cumules_avec_croissance(
@@ -4456,6 +4459,14 @@ def afficher_onglet_config(tab_config):
             value=st.session_state["prix_electricite"],
             step=0.01
         )
+
+        st.session_state["prix_electricite_batterie"] = st.number_input(
+            "Prix valorisation énergie batterie (€/kWh)",
+            min_value=0.0,
+            value=st.session_state["prix_electricite_batterie"],
+            step=0.01
+        )
+
 
         st.session_state["prix_injection"] = st.number_input(
             "Prix injection (€/kWh)",
