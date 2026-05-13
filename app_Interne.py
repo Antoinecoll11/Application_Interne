@@ -1402,9 +1402,9 @@ def calculer_analyse_financiere(mon_tableau, cout_total_net, cout_om_annuel=0.0)
     tr_communaute = (cout_total_net / gain_communaute) if gain_communaute > 0 else None
 
 
-    _, gain_cumule_10_normal = calculer_gains_cumules_avec_croissance(gain_normal, nb_annees=20)
-    _, gain_cumule_10_mix = calculer_gains_cumules_avec_croissance(gain_mix, nb_annees=20)
-    _, gain_cumule_10_communaute = calculer_gains_cumules_avec_croissance(gain_communaute, nb_annees=20)
+    _, gain_cumule_20_normal = calculer_gains_cumules_avec_croissance(gain_normal, nb_annees=20)
+    _, gain_cumule_20_mix = calculer_gains_cumules_avec_croissance(gain_mix, nb_annees=20)
+    _, gain_cumule_20_communaute = calculer_gains_cumules_avec_croissance(gain_communaute, nb_annees=20)
 
     return {
         "prix_electricite": prix_electricite,
@@ -1452,9 +1452,9 @@ def calculer_analyse_financiere(mon_tableau, cout_total_net, cout_om_annuel=0.0)
         "tr_communaute": tr_communaute,
 
 
-        "gain_10_ans_normal": round(float(np.asarray(gain_cumule_10_normal).ravel()[-1]), 2),
-        "gain_10_ans_mix": round(float(np.asarray(gain_cumule_10_mix).ravel()[-1]), 2),
-        "gain_10_ans_communaute": round(float(np.asarray(gain_cumule_10_communaute).ravel()[-1]), 2),
+        "gain_20_ans_normal": round(float(np.asarray(gain_cumule_20_normal).ravel()[-1]), 2),
+        "gain_20_ans_mix": round(float(np.asarray(gain_cumule_20_mix).ravel()[-1]), 2),
+        "gain_20_ans_communaute": round(float(np.asarray(gain_cumule_20_communaute).ravel()[-1]), 2),
         "prix_electricite_batterie": prix_electricite_batterie,
     }
 
@@ -4173,7 +4173,7 @@ def afficher_onglet_finance(
                 </div>
 
                 <div style="font-size:14px; color:#506070; line-height:1.5;">
-                    Gain cumulé à 10 ans : <strong>{f"{finance['gain_10_ans_normal']:,.2f} €".replace(",", " ")}</strong>
+                    Gain cumulé à 10 ans : <strong>{f"{finance['gain_20_ans_normal']:,.2f} €".replace(",", " ")}</strong>
                 </div>
 
                 <div style="font-size:14px; color:#506070; line-height:1.5;">
@@ -4213,7 +4213,7 @@ def afficher_onglet_finance(
 
 
                 <div style="font-size:14px; color:#506070; line-height:1.5;">
-                    Gain cumulé à 10 ans : <strong>{f"{finance['gain_10_ans_mix']:,.2f} €".replace(",", " ")}</strong>
+                    Gain cumulé à 10 ans : <strong>{f"{finance['gain_20_ans_mix']:,.2f} €".replace(",", " ")}</strong>
                 </div>
             </div>
             """, height=220)
@@ -4247,7 +4247,7 @@ def afficher_onglet_finance(
 
 
                 <div style="font-size:14px; color:#506070; line-height:1.5;">
-                    Gain cumulé à 10 ans : <strong>{f"{finance['gain_10_ans_communaute']:,.2f} €".replace(",", " ")}</strong>
+                    Gain cumulé à 10 ans : <strong>{f"{finance['gain_20_ans_communaute']:,.2f} €".replace(",", " ")}</strong>
                 </div>
             </div>
             """, height=220)
@@ -4323,7 +4323,7 @@ def afficher_onglet_finance(
 
             e5, e6 = st.columns(2)
             e5.metric("Solde annuel mixte", f"{finance['solde_mix']:,.2f} €".replace(",", " "))
-            e6.metric("Gain cumulé 10 ans", f"{finance['gain_10_ans_mix']:,.2f} €".replace(",", " "))
+            e6.metric("Gain cumulé 10 ans", f"{finance['gain_20_ans_mix']:,.2f} €".replace(",", " "))
 
         with st.expander("📙 Détail – Communauté", expanded=False):
             d1, d2, d3, d4 = st.columns(4)
@@ -4334,7 +4334,7 @@ def afficher_onglet_finance(
 
             d5, d6 = st.columns(2)
             d5.metric("Solde annuel communauté", f"{finance['solde_communaute']:,.2f} €".replace(",", " "))
-            d6.metric("Gain cumulé 10 ans", f"{finance['gain_10_ans_communaute']:,.2f} €".replace(",", " "))
+            d6.metric("Gain cumulé 10 ans", f"{finance['gain_20_ans_communaute']:,.2f} €".replace(",", " "))
 
 
 
