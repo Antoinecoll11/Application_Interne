@@ -3019,6 +3019,7 @@ def afficher_onglet_mensuel(tab_mensuel, mon_tableau):
         totaux_conso = bilan_mensuel['Autoconsommation'] + bilan_mensuel['Import_Reseau']
         for i, total in enumerate(totaux_conso):
             ax1.text(i, total + 5, f"{total:.0f}", ha='center', va='bottom', fontsize=9)
+            ax1.set_ylim(0, max(totaux_conso.max() * 1.18, totaux_conso.max() + 20))
 
 
 
@@ -3047,6 +3048,7 @@ def afficher_onglet_mensuel(tab_mensuel, mon_tableau):
         totaux_prod = bilan_mensuel['Autoconsommation'] + bilan_mensuel['Export_Reseau']
         for i, total in enumerate(totaux_prod):
             ax2.text(i, total + 5, f"{total:.0f}", ha='center', va='bottom', fontsize=9)
+            ax2.set_ylim(0, max(totaux_prod.max() * 1.18, totaux_prod.max() + 20))
 
         plt.tight_layout()
         plt.subplots_adjust(hspace=0.4)
@@ -4551,7 +4553,7 @@ def afficher_onglet_finance(
 
 
 
-            
+
         st.markdown("""
         <div style="
             height: 3px;
