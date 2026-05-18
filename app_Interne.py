@@ -984,7 +984,7 @@ def construire_tableau_principal(
     utiliser_conso_solaredge=False,
 ):
 
-    if "tableau_json_importe" in st.session_state and mode_prod == "Projet JSON importé":
+    if "tableau_json_importe" in st.session_state and fichier_prod is None:
         mon_tableau = st.session_state["tableau_json_importe"].copy()
 
         mon_tableau["Date&Time"] = pd.to_datetime(mon_tableau["Date&Time"])
