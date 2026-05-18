@@ -1896,6 +1896,32 @@ def afficher_onglet_import(tab_import):
                 c2.metric("Puissance max réelle", f"{puissance_max:,.0f} W")
                 c3.metric("Conso / jour moyen", f"{(total_kwh / 365):.1f} kWh")
 
+                st.markdown("### Enregistrer cette consommation")
+
+                nom_colonne_solaredge = st.text_input(
+                        "Nom de la colonne à ajouter dans consommation.csv",
+                        value="Conso_SolarEdge",
+                        key="nom_colonne_conso_solaredge"
+                    )
+
+                if st.button("Enregistrer la consommation SolarEdge"):
+                        if nom_colonne_solaredge.strip() == "":
+                            st.error("Veuillez entrer un nom de colonne.")
+                        else:
+                            enregistrer_conso_solaredge_dans_fichier(
+                                conso_series=conso_col.values,
+                                nom_colonne=nom_colonne_solaredge.strip()
+                            )
+                            st.success(
+                                f"La consommation SolarEdge a été enregistrée dans consommation.csv sous la colonne : {nom_colonne_solaredge}"
+                            )
+
+
+
+
+
+
+
                 dates_conso_base = dates_apercu
                 consommation_base_saisons = conso_col.values
                 mode_apercu_conso = "solaredge"
@@ -1979,25 +2005,6 @@ def afficher_onglet_import(tab_import):
                     c2.metric("Puissance Max réelle", f"{puissance_max:,.0f} W")
                     c3.metric("Conso / jour moyen", f"{(y_jour.sum()/1000):.1f} kWh")
 
-                    st.markdown("### Enregistrer cette consommation")
-
-                    nom_colonne_solaredge = st.text_input(
-                        "Nom de la colonne à ajouter dans consommation.csv",
-                        value="Conso_SolarEdge",
-                        key="nom_colonne_conso_solaredge"
-                    )
-
-                    if st.button("Enregistrer la consommation SolarEdge"):
-                        if nom_colonne_solaredge.strip() == "":
-                            st.error("Veuillez entrer un nom de colonne.")
-                        else:
-                            enregistrer_conso_solaredge_dans_fichier(
-                                conso_series=conso_col.values,
-                                nom_colonne=nom_colonne_solaredge.strip()
-                            )
-                            st.success(
-                                f"La consommation SolarEdge a été enregistrée dans consommation.csv sous la colonne : {nom_colonne_solaredge}"
-                            )
 
 
 
