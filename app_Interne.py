@@ -1812,20 +1812,43 @@ def afficher_onglet_import(tab_import):
         "></div>
         """, unsafe_allow_html=True)
 
+
+
+
+
+        conso_solaredge_active = (
+            mode_prod == "CSV SolarEdge"
+            and utiliser_conso_solaredge
+            and mon_tableau_prod_apercu is not None
+            and "Consumption_base" in mon_tableau_prod_apercu.columns
+        )
+
+
+
         # =====================================================
         # 2. CONSOMMATION
         # =====================================================
-        st.subheader("Étape 3 : Source de Consommation avant modification 🏠")
+        if conso_solaredge_active:
+            st.subheader("Étape 3 : Consommation importée depuis SolarEdge 🏠")
+            mode_conso = "SolarEdge"
+            donnees_conso = None
+            profil_choisi = "Consommation SolarEdge"
 
-        if "mode_conso" not in st.session_state:
-            st.session_state["mode_conso"] = "Profils types (Fichier CSV)"
+        else:
+            st.subheader("Étape 3 : Source de Consommation avant modification 🏠")
 
-        mode_conso = st.radio(
-            "Choix de la méthode :",
-            ["Profils types (Fichier CSV)", "Calculateur personnalisé (Tableau)"],
-            key="mode_conso"
-        )
+            if "mode_conso" not in st.session_state:
+                st.session_state["mode_conso"] = "Profils types (Fichier CSV)"
 
+            mode_conso = st.radio(
+                "Choix de la méthode :",
+                ["Profils types (Fichier CSV)", "Calculateur personnalisé (Tableau)"],
+                key="mode_conso"
+            )
+
+            # ici tu gardes ton ancien bloc :
+            # if mode_conso == ...
+            # else ...
 
         try:
             if mode_conso == "Profils types (Fichier CSV)":
