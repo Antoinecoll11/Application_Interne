@@ -4965,14 +4965,29 @@ def main():
     # 5. VÉRIFICATION DES DONNÉES DE PRODUCTION
     # =========================================================
     if mode_prod in ["CSV SolarEdge", "Fichier simple Excel"] and fichier_prod is None:
-        if mode_prod == "CSV SolarEdge":
-            st.info("Veuillez importer le fichier CSV SolarEdge pour voir le reste de la simulation.")
-        else:
-            st.info("Veuillez importer le fichier Excel de production pour voir le reste de la simulation.")
+        st.info("Veuillez choisir un mode de production ou importer un fichier de production pour lancer la simulation.")
 
         afficher_onglet_config(tab_config)
-        st.stop()
 
+        afficher_onglet_export(
+            tab_export=tab_export,
+            data_import=data_import,
+            sidebar_data=sidebar_data,
+            indicateurs=None,
+            budget=None,
+            finance_pv=None,
+            finance_pv_batt=None,
+            scenario_batterie_disponible=False,
+            mon_tableau=None,
+            budget_pv=None,
+            budget_pv_batt=None,
+            mon_tableau_pv=None,
+            budget_pv_batt_ems=None,
+            gain_total_ems=None
+        )
+
+        st.stop()
+        
     # Pour éviter les soucis de lecture du fichier uploadé
     if mode_prod == "CSV SolarEdge" and fichier_prod is not None:
         fichier_prod.seek(0)
