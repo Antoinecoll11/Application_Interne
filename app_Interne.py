@@ -2039,19 +2039,24 @@ def afficher_onglet_import(tab_import):
 
  
 
-            # =====================================================
-            # APERÇU CONSOMMATION
-            # =====================================================
+        # =====================================================
+        # 2. CONSOMMATION
+        # =====================================================
 
-            conso_solaredge_apercu = (
-                mode_prod == "CSV SolarEdge"
-                and utiliser_conso_solaredge
-                and mon_tableau_prod_apercu is not None
-                and "Consumption_base" in mon_tableau_prod_apercu.columns
-            )
+        conso_solaredge_active = (
+            mode_prod == "CSV SolarEdge"
+            and utiliser_conso_solaredge
+            and mon_tableau_prod_apercu is not None
+            and "Consumption_base" in mon_tableau_prod_apercu.columns
+        )
 
-            if conso_solaredge_apercu:
-                st.subheader("Aperçu : consommation SolarEdge")
+        try:
+            if conso_solaredge_active:
+                st.subheader("Étape 3 : Consommation importée depuis SolarEdge 🏠")
+
+                mode_conso = "SolarEdge"
+                donnees_conso = None
+                profil_choisi = "Consommation SolarEdge"
 
                 conso_col = pd.to_numeric(
                     mon_tableau_prod_apercu["Consumption_base"],
@@ -2086,6 +2091,8 @@ def afficher_onglet_import(tab_import):
                 total_kwh = conso_col.sum() / 1000
                 puissance_max = conso_col.max()
 
+                st.subheader("Aperçu : consommation SolarEdge")
+
                 c1, c2, c3 = st.columns(3)
                 c1.metric("Total annuel", f"{total_kwh:,.0f} kWh".replace(",", " "))
                 c2.metric("Puissance max réelle", f"{puissance_max:,.0f} W")
@@ -2093,37 +2100,226 @@ def afficher_onglet_import(tab_import):
 
                 dates_conso_base = dates_apercu
                 consommation_base_saisons = conso_col.values
-
                 mode_apercu_conso = "solaredge"
 
             else:
-                st.subheader(f"Aperçu : {profil_choisi}")
+                st.subheader("Étape 3 : Source de Consommation avant modification 🏠")
 
-                if mode_conso == "Calculateur personnalisé (Tableau)":
-                    conso_jour_semaine = profil_24h_semaine.sum() / 1000
-                    conso_jour_weekend = profil_24h_weekend.sum() / 1000
-                    puissance_max = max(
-                        profil_24h_semaine.max(),
-                        profil_24h_weekend.max()
+                if "mode_conso" not in st.session_state:
+                    st.session_state["mode_conso"] = "Profils types (Fichier CSV)"
+
+                mode_conso = st.radio(
+                    "Choix de la méthode :",
+                    ["Profils types (Fichier CSV)", "Calculateur personnalisé (Tableau)"],
+                    key="mode_conso"
+                )
+
+                if mode_conso == "Profils types (Fichier CSV)":
+                    donnees_conso = pd.read_csv(conso_path, sep=";", decimal=",")
+
+                    choix_profils = [
+                        col for col in donnees_conso.columns
+                        if col.lower() != "date" and "unnamed" not in col.lower()
+                    ]
+
+                    st.success("Fichier de profils détecté !")
+
+                    if "profil_choisi" not in st.session_state and len(choix_profils) > 0:
+                        st.session_state["profil_choisi"] = choix_profils[0]
+
+                    if len(choix_profils) > 0 and st.session_state.get("profil_choisi") not in choix_profils:
+                        st.session_state["profil_choisi"] = choix_profils[0]
+
+                    profil_choisi = st.selectbox(
+                        "Choisissez le profil à simuler :",
+                        choix_profils,
+                        key="profil_choisi"
                     )
 
-                    c1, c2, c3, c4 = st.columns(4)
-                    c1.metric("Total Annuel", f"{total_kwh:,.0f} kWh".replace(",", " "))
-                    c2.metric("Puissance Max", f"{puissance_max:,.0f} W")
-                    c3.metric("Conso / jour semaine", f"{conso_jour_semaine:.1f} kWh")
-                    c4.metric("Conso / jour week-end", f"{conso_jour_weekend:.1f} kWh")
+                    conso_col = pd.to_numeric(
+                        donnees_conso[profil_choisi],
+                        errors="coerce"
+                    ).fillna(0)
 
-                    mode_apercu_conso = "custom"
+                    dates_apercu = pd.date_range(
+                        start="2025-01-01",
+                        periods=len(donnees_conso),
+                        freq="h"
+                    )
 
-                else:
+                    df_conso_reelle = pd.DataFrame({
+                        "Date&Time": dates_apercu,
+                        "Consumption": conso_col.values
+                    })
+
+                    conso_par_jour = df_conso_reelle.groupby(
+                        df_conso_reelle["Date&Time"].dt.date
+                    )["Consumption"].sum()
+
+                    jour_plus_charge = conso_par_jour.idxmax()
+
+                    jour_reel = df_conso_reelle[
+                        df_conso_reelle["Date&Time"].dt.date == jour_plus_charge
+                    ].copy()
+
+                    y_jour = jour_reel.set_index(
+                        jour_reel["Date&Time"].dt.hour
+                    )["Consumption"]
+
+                    y_mois = conso_col.groupby(dates_apercu.month).sum() / 1000
+                    total_kwh = conso_col.sum() / 1000
                     puissance_max = conso_col.max()
+
+                    dates_conso_base = dates_apercu
+                    consommation_base_saisons = conso_col.values
+                    mode_apercu_conso = "profil"
+
+                    st.subheader(f"Aperçu : {profil_choisi}")
 
                     c1, c2, c3 = st.columns(3)
                     c1.metric("Total Annuel", f"{total_kwh:,.0f} kWh".replace(",", " "))
                     c2.metric("Puissance Max réelle", f"{puissance_max:,.0f} W")
                     c3.metric("Conso / jour moyen", f"{(y_jour.sum()/1000):.1f} kWh")
 
-                    mode_apercu_conso = "profil"
+                else:
+                    st.info("Ajoutez vos appareils. Horaires : '8-10' ou '12-13;19-21'")
+
+                    default_devices = [
+                        {"Appareil": "Talon (Veilles, Box, Frigo)", "Puissance (W)": 200, "Horaires": "0-24", "Type de jour": "Tous", "Actif": True},
+                        {"Appareil": "Éclairage & Prises", "Puissance (W)": 350, "Horaires": "7-9;18-23", "Type de jour": "Semaine", "Actif": True},
+                        {"Appareil": "Lave-Linge", "Puissance (W)": 2000, "Horaires": "17-20", "Type de jour": "Semaine", "Actif": True},
+                        {"Appareil": "Plaques Cuisson", "Puissance (W)": 1800, "Horaires": "19-21", "Type de jour": "Semaine", "Actif": True},
+                        {"Appareil": "Éclairage & Prises", "Puissance (W)": 350, "Horaires": "10-12;16-23", "Type de jour": "Week-end", "Actif": True},
+                        {"Appareil": "Lave-Linge", "Puissance (W)": 2000, "Horaires": "11-13;18-21", "Type de jour": "Week-end", "Actif": True},
+                        {"Appareil": "Plaques Cuisson", "Puissance (W)": 1800, "Horaires": "12-14;19-21", "Type de jour": "Week-end", "Actif": True},
+                    ]
+
+                    st.markdown("### Appareils et horaires")
+
+                    if "appareils_personnalises" not in st.session_state or not st.session_state["appareils_personnalises"]:
+                        st.session_state["appareils_personnalises"] = default_devices.copy()
+
+                    if "version_tableau_custom_conso" not in st.session_state:
+                        st.session_state["version_tableau_custom_conso"] = 0
+
+                    if st.button("Remettre les appareils par défaut"):
+                        st.session_state["appareils_personnalises"] = default_devices.copy()
+                        st.session_state["version_tableau_custom_conso"] += 1
+                        st.rerun()
+
+                    df_custom = st.data_editor(
+                        pd.DataFrame(st.session_state["appareils_personnalises"]),
+                        num_rows="dynamic",
+                        use_container_width=True,
+                        key=f"tableau_custom_conso_unique_{st.session_state['version_tableau_custom_conso']}",
+                        column_config={
+                            "Type de jour": st.column_config.SelectboxColumn(
+                                "Type de jour",
+                                options=["Tous", "Semaine", "Week-end"],
+                                required=True
+                            ),
+                            "Actif": st.column_config.CheckboxColumn("Actif")
+                        }
+                    )
+
+                    st.session_state["appareils_personnalises"] = df_custom.to_dict(orient="records")
+
+                    st.markdown("### Saisonnalité mensuelle")
+
+                    mois_noms = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin",
+                                 "Juil", "Aoû", "Sep", "Oct", "Nov", "Déc"]
+
+                    if "coeffs_mensuels_conso" not in st.session_state:
+                        st.session_state["coeffs_mensuels_conso"] = [1.0] * 12
+
+                    coeffs_mensuels_conso = []
+
+                    cols_mois = st.columns(4)
+                    for i, mois in enumerate(mois_noms):
+                        with cols_mois[i % 4]:
+                            cle_coeff = f"coeff_conso_{i}"
+
+                            if cle_coeff not in st.session_state:
+                                st.session_state[cle_coeff] = st.session_state["coeffs_mensuels_conso"][i]
+
+                            coeff = st.number_input(
+                                mois,
+                                min_value=0.50,
+                                max_value=2.00,
+                                step=0.05,
+                                key=cle_coeff
+                            )
+                            coeffs_mensuels_conso.append(coeff)
+
+                    st.session_state["coeffs_mensuels_conso"] = coeffs_mensuels_conso
+
+                    profil_24h_semaine = np.zeros(24)
+                    profil_24h_weekend = np.zeros(24)
+
+                    for _, row in df_custom.iterrows():
+                        if row["Actif"]:
+                            profil_h = parse_h(row["Horaires"]) * row["Puissance (W)"]
+                            type_jour = row["Type de jour"]
+
+                            if type_jour == "Tous":
+                                profil_24h_semaine += profil_h
+                                profil_24h_weekend += profil_h
+                            elif type_jour == "Semaine":
+                                profil_24h_semaine += profil_h
+                            elif type_jour == "Week-end":
+                                profil_24h_weekend += profil_h
+
+                    y_jour = pd.DataFrame({
+                        "Heure": range(24),
+                        "Semaine": profil_24h_semaine,
+                        "Week-end": profil_24h_weekend
+                    }).set_index("Heure")
+
+                    dates_annee = pd.date_range(
+                        start="2025-01-01 00:00:00",
+                        periods=365 * 24,
+                        freq="h"
+                    )
+
+                    conso_horaire = []
+
+                    for dt in dates_annee:
+                        coeff_mois = coeffs_mensuels_conso[dt.month - 1]
+
+                        if dt.weekday() < 5:
+                            valeur = profil_24h_semaine[dt.hour]
+                        else:
+                            valeur = profil_24h_weekend[dt.hour]
+
+                        conso_horaire.append(valeur * coeff_mois)
+
+                    conso_horaire = np.array(conso_horaire)
+
+                    df_temp = pd.DataFrame({
+                        "Date&Time": dates_annee,
+                        "Consumption": conso_horaire
+                    })
+
+                    y_mois = df_temp.groupby(df_temp["Date&Time"].dt.month)["Consumption"].sum() / 1000
+                    total_kwh = df_temp["Consumption"].sum() / 1000
+
+                    dates_conso_base = df_temp["Date&Time"]
+                    consommation_base_saisons = df_temp["Consumption"].values
+
+                    profil_choisi = "Sur Mesure (Semaine / Week-end)"
+                    mode_apercu_conso = "custom"
+
+                    st.subheader(f"Aperçu : {profil_choisi}")
+
+                    conso_jour_semaine = profil_24h_semaine.sum() / 1000
+                    conso_jour_weekend = profil_24h_weekend.sum() / 1000
+                    puissance_max = max(profil_24h_semaine.max(), profil_24h_weekend.max())
+
+                    c1, c2, c3, c4 = st.columns(4)
+                    c1.metric("Total Annuel", f"{total_kwh:,.0f} kWh".replace(",", " "))
+                    c2.metric("Puissance Max", f"{puissance_max:,.0f} W")
+                    c3.metric("Conso / jour semaine", f"{conso_jour_semaine:.1f} kWh")
+                    c4.metric("Conso / jour week-end", f"{conso_jour_weekend:.1f} kWh")
 
             # =====================================================
             # COURBES COMMUNES
@@ -2132,54 +2328,27 @@ def afficher_onglet_import(tab_import):
             fig_apercu, (ax_jour, ax_mois) = plt.subplots(1, 2, figsize=(14, 4))
 
             if mode_apercu_conso == "custom":
-                ax_jour.plot(
-                    y_jour.index,
-                    y_jour["Semaine"],
-                    linewidth=2.5,
-                    label="Semaine"
-                )
-                ax_jour.plot(
-                    y_jour.index,
-                    y_jour["Week-end"],
-                    linewidth=2.5,
-                    linestyle="--",
-                    label="Week-end"
-                )
+                ax_jour.plot(y_jour.index, y_jour["Semaine"], linewidth=2.5, label="Semaine")
+                ax_jour.plot(y_jour.index, y_jour["Week-end"], linewidth=2.5, linestyle="--", label="Week-end")
                 ax_jour.set_title("Modèle sur un jour type")
-                ax_jour.set_xticks(range(0, 24, 2))
-                ax_jour.set_xlabel("Heure")
-                ax_jour.set_ylabel("Puissance (W)")
-                ax_jour.set_ylim(bottom=0)
-                ax_jour.grid(True, linestyle='--', alpha=0.6)
                 ax_jour.legend()
-
             else:
-                ax_jour.plot(
-                    y_jour.index,
-                    y_jour.values,
-                    color='#1565C0',
-                    linewidth=2.5
-                )
-                ax_jour.fill_between(
-                    y_jour.index,
-                    y_jour.values,
-                    color='#1565C0',
-                    alpha=0.2
-                )
+                ax_jour.plot(y_jour.index, y_jour.values, color="#1565C0", linewidth=2.5)
+                ax_jour.fill_between(y_jour.index, y_jour.values, color="#1565C0", alpha=0.2)
 
                 if mode_apercu_conso == "solaredge":
                     ax_jour.set_title("Jour le plus chargé - SolarEdge")
                 else:
                     ax_jour.set_title("Jour le plus chargé")
 
-                ax_jour.set_xticks(range(0, 24, 2))
-                ax_jour.set_xlabel("Heure")
-                ax_jour.set_ylabel("Puissance (W)")
-                ax_jour.set_ylim(bottom=0)
-                ax_jour.grid(True, linestyle='--', alpha=0.6)
+            ax_jour.set_xticks(range(0, 24, 2))
+            ax_jour.set_xlabel("Heure")
+            ax_jour.set_ylabel("Puissance (W)")
+            ax_jour.set_ylim(bottom=0)
+            ax_jour.grid(True, linestyle="--", alpha=0.6)
 
-            mois_noms = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin',
-                         'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
+            mois_noms = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin",
+                         "Juil", "Aoû", "Sep", "Oct", "Nov", "Déc"]
 
             y_mois_complet = pd.Series(0.0, index=range(1, 13))
             y_mois_complet.update(y_mois)
@@ -2187,14 +2356,15 @@ def afficher_onglet_import(tab_import):
             ax_mois.bar(
                 mois_noms,
                 y_mois_complet.values,
-                color='#FF9800',
-                edgecolor='black',
+                color="#FF9800",
+                edgecolor="black",
                 alpha=0.8
             )
+
             ax_mois.set_title("Consommation Mensuelle Totale")
             ax_mois.set_xlabel("Mois")
             ax_mois.set_ylabel("Énergie (kWh)")
-            ax_mois.grid(axis='y', linestyle='--', alpha=0.6)
+            ax_mois.grid(axis="y", linestyle="--", alpha=0.6)
 
             plt.tight_layout()
             st.pyplot(fig_apercu)
@@ -2204,7 +2374,6 @@ def afficher_onglet_import(tab_import):
                 consommation_base=consommation_base_saisons,
                 titre="Consommation de base sur 4 jours de saison"
             )
-
 
 
 
