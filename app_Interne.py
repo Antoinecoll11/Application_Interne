@@ -984,15 +984,31 @@ def construire_tableau_principal(
     utiliser_conso_solaredge=False,
 ):
 
-    mon_tableau = charger_production(
-        mode_prod=mode_prod,
-        fichier_prod=fichier_prod,
-        colonne_prod=colonne_prod,
-        puissance_crete=puissance_crete,
-        prod_specifique=prod_specifique,
-        df_repartition=df_repartition,
-        utiliser_conso_solaredge=utiliser_conso_solaredge
-    )
+    if "tableau_json_importe" in st.session_state and mode_prod == "Projet JSON importé":
+        mon_tableau = st.session_state["tableau_json_importe"].copy()
+
+        mon_tableau["Date&Time"] = pd.to_datetime(mon_tableau["Date&Time"])
+        mon_tableau["Inverter Output"] = pd.to_numeric(
+            mon_tableau["Inverter Output"],
+            errors="coerce"
+        ).fillna(0)
+
+        if "Consumption_base" in mon_tableau.columns:
+            mon_tableau["Consumption_base"] = pd.to_numeric(
+                mon_tableau["Consumption_base"],
+                errors="coerce"
+            ).fillna(0)
+
+    else:
+        mon_tableau = charger_production(
+            mode_prod=mode_prod,
+            fichier_prod=fichier_prod,
+            colonne_prod=colonne_prod,
+            puissance_crete=puissance_crete,
+            prod_specifique=prod_specifique,
+            df_repartition=df_repartition,
+            utiliser_conso_solaredge=utiliser_conso_solaredge
+        )
 
     facteur_augmentation_prod = 1 + augmentation_prod_pct / 100
     mon_tableau['Inverter Output'] = mon_tableau['Inverter Output'] * facteur_augmentation_prod
