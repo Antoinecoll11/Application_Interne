@@ -870,7 +870,7 @@ def charger_batteries():
     except Exception:
         return pd.DataFrame()
 
-def charger_production(mode_prod, fichier_prod, puissance_crete, prod_specifique=None, df_repartition=None, colonne_prod=None):
+def charger_production(mode_prod, fichier_prod, puissance_crete, prod_specifique=None, df_repartition=None, colonne_prod=None, utiliser_conso_solaredge=False):
     if mode_prod == "CSV SolarEdge":
         donnees_prod = pd.read_csv(fichier_prod, sep=",", skiprows=[1], index_col=False)
         donnees_prod = donnees_prod[donnees_prod['Date&Time'].astype(str).str.contains('-', na=False)]
@@ -882,9 +882,16 @@ def charger_production(mode_prod, fichier_prod, puissance_crete, prod_specifique
         )
 
         mon_tableau = donnees_prod[['Date&Time', 'Inverter Output']].copy()
+
         mon_tableau['Inverter Output'] = pd.to_numeric(
             mon_tableau['Inverter Output'],
             errors='coerce'
+        ).fillna(0)
+
+        if utiliser_conso_solaredge and "Consumption" in donnees_prod.columns:
+            mon_tableau["Consumption_base"] = pd.to_numeric(
+                donnees_prod["Consumption"],
+                errors="coerce"
         ).fillna(0)
 
         return mon_tableau
@@ -956,55 +963,68 @@ def construire_tableau_principal(
     colonne_prod,
     coeffs_pac_mensuels=None,
     mois_chauffage_actifs=None,
+    utiliser_conso_solaredge=False,
 ):
 
     mon_tableau = charger_production(
         mode_prod=mode_prod,
         fichier_prod=fichier_prod,
+        colonne_prod=colonne_prod,
         puissance_crete=puissance_crete,
         prod_specifique=prod_specifique,
         df_repartition=df_repartition,
-        colonne_prod=colonne_prod
+        utiliser_conso_solaredge=utiliser_conso_solaredge
     )
 
     facteur_augmentation_prod = 1 + augmentation_prod_pct / 100
     mon_tableau['Inverter Output'] = mon_tableau['Inverter Output'] * facteur_augmentation_prod
 
-    if mode_conso == "Calculateur personnalisé (Tableau)":
-        conso_base = []
+    conso_solaredge_disponible = (
+        utiliser_conso_solaredge
+        and "Consumption_base" in mon_tableau.columns
+    )
 
-        for dt in pd.to_datetime(mon_tableau["Date&Time"]):
-            coeff_mois = coeffs_mensuels_conso[dt.month - 1]
-
-            if dt.weekday() < 5:
-                valeur = profil_24h_semaine[dt.hour]
-            else:
-                valeur = profil_24h_weekend[dt.hour]
-
-            conso_base.append(valeur * coeff_mois)
-
-        mon_tableau["Consumption_base"] = np.array(conso_base)
+    if conso_solaredge_disponible:
+        mon_tableau["Consumption_base"] = pd.to_numeric(
+            mon_tableau["Consumption_base"],
+            errors="coerce"
+        ).fillna(0)
     else:
+        if mode_conso == "Calculateur personnalisé (Tableau)":
+            conso_base = []
 
-        if donnees_conso is not None and profil_choisi is not None:
-            valeurs_conso = pd.to_numeric(
-                donnees_conso[profil_choisi],
-                errors='coerce'
-            ).fillna(0).values
+            for dt in pd.to_datetime(mon_tableau["Date&Time"]):
+                coeff_mois = coeffs_mensuels_conso[dt.month - 1]
 
-            if len(valeurs_conso) < len(mon_tableau):
-                valeurs_conso = np.pad(
-                    valeurs_conso,
-                    (0, len(mon_tableau) - len(valeurs_conso)),
-                    mode='constant',
-                    constant_values=0
-                )
-            else:
-                valeurs_conso = valeurs_conso[:len(mon_tableau)]
+                if dt.weekday() < 5:
+                    valeur = profil_24h_semaine[dt.hour]
+                else:
+                    valeur = profil_24h_weekend[dt.hour]
 
-            mon_tableau["Consumption_base"] = valeurs_conso
+                conso_base.append(valeur * coeff_mois)
+
+            mon_tableau["Consumption_base"] = np.array(conso_base)
         else:
-            mon_tableau["Consumption_base"] = 0.0
+
+            if donnees_conso is not None and profil_choisi is not None:
+                valeurs_conso = pd.to_numeric(
+                    donnees_conso[profil_choisi],
+                    errors='coerce'
+                ).fillna(0).values
+
+                if len(valeurs_conso) < len(mon_tableau):
+                    valeurs_conso = np.pad(
+                        valeurs_conso,
+                        (0, len(mon_tableau) - len(valeurs_conso)),
+                        mode='constant',
+                        constant_values=0
+                    )
+                else:
+                    valeurs_conso = valeurs_conso[:len(mon_tableau)]
+
+                mon_tableau["Consumption_base"] = valeurs_conso
+            else:
+                mon_tableau["Consumption_base"] = 0.0
 
     if borne_active:
         mon_tableau["Conso_Borne"] = generer_profil_borne(
@@ -1588,6 +1608,7 @@ def afficher_onglet_import(tab_import):
         fichier_prod = None
         df_repartition = None
         colonne_prod = None
+        utiliser_conso_solaredge = False
 
 
         st.markdown("""
@@ -1618,6 +1639,12 @@ def afficher_onglet_import(tab_import):
                 "Importez le CSV SolarEdge",
                 type=['csv'],
                 key="prod_solaredge"
+            )
+
+            utiliser_conso_solaredge = st.checkbox(
+                "Utiliser aussi la consommation du fichier SolarEdge",
+                value=False,
+                key="utiliser_conso_solaredge"
             )
 
         elif mode_prod == "Fichier simple Excel":
@@ -1755,7 +1782,8 @@ def afficher_onglet_import(tab_import):
                     colonne_prod=colonne_prod,
                     puissance_crete=puissance_crete,
                     prod_specifique=prod_specifique,
-                    df_repartition=df_repartition
+                    df_repartition=df_repartition,
+                    utiliser_conso_solaredge=utiliser_conso_solaredge
                 )
 
             elif mode_prod == "Production théorique personnalisée":
@@ -2061,7 +2089,8 @@ def afficher_onglet_import(tab_import):
         "profil_24h_semaine": profil_24h_semaine,
         "profil_24h_weekend": profil_24h_weekend,
         "coeffs_mensuels_conso": coeffs_mensuels_conso,
-        "colonne_prod": colonne_prod
+        "colonne_prod": colonne_prod,
+        "utiliser_conso_solaredge": utiliser_conso_solaredge
     }
 
 
@@ -4813,7 +4842,8 @@ def main():
         jours_chauffage=sidebar_data["jours_chauffage"],
         capa_wh=sidebar_data["capa_wh"],
         puiss_w=sidebar_data["puiss_w"],
-        mois_chauffage_actifs=sidebar_data["mois_chauffage_actifs"]
+        mois_chauffage_actifs=sidebar_data["mois_chauffage_actifs"],
+        utiliser_conso_solaredge=data_import["utiliser_conso_solaredge"]
     )
 
     indicateurs = calculer_indicateurs_annuels(mon_tableau, sidebar_data["capa_wh"])
@@ -4868,7 +4898,8 @@ def main():
         jours_chauffage=sidebar_data["jours_chauffage"],
         activer_batterie=False,
         capa_wh=0.0,
-        puiss_w=0.0
+        puiss_w=0.0,
+        utiliser_conso_solaredge=data_import["utiliser_conso_solaredge"]
     )
 
     budget_pv = calculer_budget(
@@ -4940,7 +4971,8 @@ def main():
             jours_chauffage=sidebar_data["jours_chauffage"],
             activer_batterie=True,
             capa_wh=sidebar_data["capa_wh"],
-            puiss_w=sidebar_data["puiss_w"]
+            puiss_w=sidebar_data["puiss_w"],
+            utiliser_conso_solaredge=data_import["utiliser_conso_solaredge"]
         )
 
         budget_pv_batt = calculer_budget(
