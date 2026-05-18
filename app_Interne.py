@@ -822,12 +822,18 @@ def construire_donnees_projet(mon_tableau_pv=None):
         "prod_specifique": st.session_state.get("prod_specifique", 900.0),
         "profil_choisi": st.session_state.get("profil_choisi", None),
         "subside_supplementaire": st.session_state.get("subside_supplementaire", 0.0),
-        "taux_croissance_elec_annuel": st.session_state.get("taux_croissance_elec_annuel", 0.0),
+        "taux_croissance_elec_annuel": st.session_state.get("taux_croissance_elec_annuel", 3.0),
         "cout_om_pv_par_wc_an": st.session_state.get("cout_om_pv_par_wc_an", 0.0),
         "cout_om_batterie_par_wh_an": st.session_state.get("cout_om_batterie_par_wh_an", 0.0),
-        "perte_pv_annuelle": st.session_state.get("perte_pv_annuelle", 0.0),
-        "perte_batterie_annuelle": st.session_state.get("perte_batterie_annuelle", 0.0),
+        "perte_pv_annuelle": st.session_state.get("perte_pv_annuelle", 0.5),
+        "perte_batterie_annuelle": st.session_state.get("perte_batterie_annuelle", 0.5),
         "coeffs_pac_mensuels": st.session_state.get("coeffs_pac_mensuels", [1.40, 1.30, 1.10, 0.80, 0.40, 0.20, 0.10, 0.10, 0.30, 0.70, 1.10, 1.40]),
+        "utiliser_conso_solaredge": st.session_state.get("utiliser_conso_solaredge", False),
+        "prix_electricite_batterie": st.session_state.get("prix_electricite_batterie", 0.27),
+        "mois_chauffage_actifs": st.session_state.get("mois_chauffage_actifs", ["Jan", "Fév", "Mar", "Avr", "Oct", "Nov", "Déc"]),
+        "mode_puissance_chauffe_eau": st.session_state.get("mode_puissance_chauffe_eau", "2.2 kW"),
+        "mode_puissance_chauffage": st.session_state.get("mode_puissance_chauffage", "1500 W"),
+
     }
 
     if mon_tableau_pv is not None:
