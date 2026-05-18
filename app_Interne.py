@@ -10,7 +10,6 @@ from scipy.interpolate import PchipInterpolator
 import streamlit.components.v1 as components
 from pathlib import Path
 import json
-
 # ==========================================
 # CHEMINS / CONSTANTES
 # ==========================================
@@ -20,7 +19,6 @@ conso_path = BASE_DIR / "consommation.csv"
 batteries_path = BASE_DIR / "batteries.xlsx"
 panneau_path = BASE_DIR / "panneau.jpg"
 prod_excel_path = BASE_DIR / "production.xlsx"
-
 
 # ==========================================
 # INITIALISATION
@@ -53,7 +51,6 @@ def initialiser_session_state():
     for cle, valeur in valeurs_defaut.items():
         if cle not in st.session_state:
             st.session_state[cle] = valeur
-
 # ==========================================
 # CSS
 # ==========================================
@@ -281,7 +278,6 @@ def injecter_css():
 # ==========================================
 # FONCTIONS UTILITAIRES
 # ==========================================
-
 def parse_horaires_borne(h_str):
     plages = []
     try:
@@ -307,7 +303,6 @@ def duree_totale_horaires(h_str):
 def generer_profil_borne(date_series, puissance_borne_kw, horaires_borne, jours_selectionnes):
     puissance_borne_wh = puissance_borne_kw * 1000
     plages = parse_horaires_borne(horaires_borne)
-
     mapping_jours = {
         "Lundi": 0,
         "Mardi": 1,
@@ -459,10 +454,6 @@ def parse_h(h_str):
 
 def afficher_apercu_production(mon_tableau_prod, titre="Aperçu production"):
 
-
-
-
-
     st.subheader(titre)
 
     if mon_tableau_prod is None or mon_tableau_prod.empty:
@@ -541,7 +532,6 @@ def afficher_apercu_production(mon_tableau_prod, titre="Aperçu production"):
     plt.tight_layout()
     st.pyplot(fig_prod)
 
-
 def calcul_gain_ems_annuel(mon_tableau, taux_ems, prix_electricite, prix_injection):
     df = mon_tableau.copy()
     df["Heure"] = pd.to_datetime(df["Date&Time"]).dt.hour
@@ -589,7 +579,6 @@ def calcul_gain_ems_annuel(mon_tableau, taux_ems, prix_electricite, prix_injecti
     # Valeur totale EMS (ce que ça vaut réellement)
     economie_ems_totale = energie_revalorisee * prix_electricite
 
-
     # Facture sans installation
     total_conso_kwh = df["Consumption"].sum() / 1000
     cout_sans_installation = total_conso_kwh * prix_electricite
@@ -616,7 +605,6 @@ def calcul_gain_ems_annuel(mon_tableau, taux_ems, prix_electricite, prix_injecti
         "gain_annuel_total_ems": gain_annuel_total_ems,
         "economie_ems_totale": economie_ems_totale,
     }
-
 
 def afficher_apercu_4_saisons_conso_base(date_series, consommation_base, titre="Consommation de base sur 4 saisons"):
     df = pd.DataFrame({
@@ -680,15 +668,10 @@ def afficher_apercu_4_saisons_conso_base(date_series, consommation_base, titre="
     plt.tight_layout()
     st.pyplot(fig, use_container_width=False)
 
-
 def analyser_depassements_puissance(mon_tableau, puissance_reference_kw):
-    
     seuil_w = puissance_reference_kw * 1000
-
     import_w = mon_tableau["Import_Reseau"]
-
     depassement_w = (import_w - seuil_w).clip(lower=0)
-
     nb_heures_depassement = (depassement_w > 0).sum()
     depassement_total_kwh = depassement_w.sum() / 1000
     depassement_max_kw = depassement_w.max() / 1000
@@ -701,8 +684,6 @@ def analyser_depassements_puissance(mon_tableau, puissance_reference_kw):
         "depassement_max_kw": depassement_max_kw,
         "taux_depassement": taux_depassement
     }
-
-
 
 def calculer_tarif_dynamique(mon_tableau, fichier_epex):
     df_epex = pd.read_excel(fichier_epex)
@@ -753,12 +734,9 @@ def calculer_tarif_dynamique(mon_tableau, fichier_epex):
         "prix_moyen_final": prix_moyen_final,
         "df_calc": df_calc
     }
-
 # ==========================================
 # FONCTION SAUVEGARDE PDF
 # ==========================================
-
-
 def charger_projet_json(fichier_json):
     try:
         projet = json.load(fichier_json)
@@ -769,8 +747,6 @@ def charger_projet_json(fichier_json):
 
     except Exception as e:
         st.error(f"Erreur lors de l'import du projet : {e}")
-
-
 
 def construire_donnees_projet(mon_tableau_pv=None):
     projet = {
@@ -857,9 +833,6 @@ def construire_donnees_projet(mon_tableau_pv=None):
 
     return projet
 
-
-
-
 def enregistrer_conso_solaredge_dans_fichier(conso_series, nom_colonne):
     df_conso = pd.read_csv(conso_path, sep=";", decimal=",")
 
@@ -874,8 +847,6 @@ def enregistrer_conso_solaredge_dans_fichier(conso_series, nom_colonne):
 
     df_conso.to_csv(conso_path, sep=";", decimal=",", index=False)
 
-
-
 # ==========================================
 # CHARGEMENT DES DONNÉES
 # ==========================================
@@ -887,8 +858,6 @@ def charger_batteries():
         return df_batteries
     except Exception:
         return pd.DataFrame()
-
-
 
 def charger_production(mode_prod, fichier_prod, puissance_crete, prod_specifique=None, df_repartition=None, colonne_prod=None, utiliser_conso_solaredge=False):
 
@@ -908,8 +877,6 @@ def charger_production(mode_prod, fichier_prod, puissance_crete, prod_specifique
             ).fillna(0)
 
         return mon_tableau
-
-
     if mode_prod == "CSV SolarEdge":
         donnees_prod = pd.read_csv(fichier_prod, sep=",", skiprows=[1], index_col=False)
         donnees_prod = donnees_prod[donnees_prod['Date&Time'].astype(str).str.contains('-', na=False)]
@@ -1160,9 +1127,6 @@ def construire_tableau_principal(
         "Conso_Chauffage"
     ] = 0.0
 
-
-
-
     mon_tableau["Consumption"] = (
         mon_tableau["Consumption_base"]
         + mon_tableau["Conso_Borne"]
@@ -1200,14 +1164,12 @@ def construire_tableau_principal(
 
 def creer_tableau_verification(mon_tableau, capa_wh):
     tableau_verification = pd.DataFrame()
-
     tableau_verification['Date&Time'] = mon_tableau['Date&Time']
     tableau_verification['Consommation_base_Wh'] = mon_tableau.get('Consumption_base', 0.0)
     tableau_verification['Conso_Borne_Wh'] = mon_tableau.get('Conso_Borne', 0.0)
     tableau_verification['Conso_ChauffeEau_Wh'] = mon_tableau.get('Conso_ChauffeEau', 0.0)
     tableau_verification['Conso_PAC_Wh'] = mon_tableau.get('Conso_PAC', 0.0)
     tableau_verification['Conso_Chauffage_Wh'] = mon_tableau.get('Conso_Chauffage', 0.0)
-
     tableau_verification['Consommation_Wh'] = mon_tableau['Consumption']
     tableau_verification['Production_Wh'] = mon_tableau['Inverter Output']
     tableau_verification['Autoconsommation_Wh'] = mon_tableau['Autoconsommation']
@@ -1217,8 +1179,6 @@ def creer_tableau_verification(mon_tableau, capa_wh):
     tableau_verification['Decharge_Batterie_Wh'] = mon_tableau.get('Decharge_Batterie', 0.0)
     tableau_verification['Niveau_Batterie_Wh'] = mon_tableau.get('Niveau_Batterie', 0.0)
     tableau_verification['Capacite_Batterie_Wh'] = capa_wh if capa_wh > 0 else 0.0
-
-
     if capa_wh > 0:
         tableau_verification['Niveau_Batterie_%'] = (tableau_verification['Niveau_Batterie_Wh'] / capa_wh) * 100
     else:
@@ -1247,12 +1207,6 @@ def creer_tableau_verification(mon_tableau, capa_wh):
 
     return tableau_verification
 
-
-
-
-
-
-
 # ==========================================
 # CALCULS SYNTHÉTIQUES
 # ==========================================
@@ -1265,14 +1219,11 @@ def calculer_indicateurs_annuels(mon_tableau, capa_wh):
     total_export = mon_tableau['Export_Reseau'].sum() / 1000
     total_ess = mon_tableau['Decharge_Batterie'].sum() / 1000
     total_solaire_direct = max(0, total_auto - total_ess)
-
-
     total_conso_base = mon_tableau.get('Consumption_base', pd.Series(0, index=mon_tableau.index)).sum() / 1000
     total_borne = mon_tableau.get('Conso_Borne', pd.Series(0, index=mon_tableau.index)).sum() / 1000
     total_chauffe_eau = mon_tableau.get('Conso_ChauffeEau', pd.Series(0, index=mon_tableau.index)).sum() / 1000
     total_pac = mon_tableau.get('Conso_PAC', pd.Series(0, index=mon_tableau.index)).sum() / 1000
     total_chauffage = mon_tableau.get('Conso_Chauffage', pd.Series(0, index=mon_tableau.index)).sum() / 1000
-
     taux_autoconso = (total_auto / total_prod * 100) if total_prod > 0 else 0
     taux_autonomie = (total_auto / total_conso * 100) if total_conso > 0 else 0
     taux_batterie = (total_ess / total_conso * 100) if total_conso > 0 else 0
@@ -1285,12 +1236,6 @@ def calculer_indicateurs_annuels(mon_tableau, capa_wh):
     else:
         nombre_cycles = 0
         soc_moyen = 0
-
-
-
-
-
-
     return {
         "total_prod": total_prod,
         "total_conso": total_conso,
@@ -1347,19 +1292,11 @@ def calculer_budget(puissance_crete, activer_batterie, capa_kwh, capa_wh, aide_p
         texte_aide_batterie = "Aucune batterie activée."
 
     subside_supplementaire = st.session_state.get("subside_supplementaire", 0.0)
-
     aide_totale = round(aide_pv + aide_batterie + subside_supplementaire, 2)
-
-
-
     cout_pv = round(puissance_crete * 1000 * st.session_state["cout_pv_par_wc"], 2)
     cout_batterie = round(capa_wh * st.session_state["cout_batterie_par_wh"], 2) if activer_batterie and capa_wh > 0 else 0.0
-
     cout_total_brut = round(cout_pv + cout_batterie, 2)
     cout_total_net = round(cout_total_brut - aide_totale, 2)
-
-
-
     cout_om_pv_annuel = round(
         puissance_crete * 1000 * st.session_state["cout_om_pv_par_wc_an"],
         2
@@ -1371,9 +1308,6 @@ def calculer_budget(puissance_crete, activer_batterie, capa_kwh, capa_wh, aide_p
     ) if activer_batterie and capa_wh > 0 else 0.0
 
     cout_om_total_annuel = round(cout_om_pv_annuel + cout_om_batterie_annuel, 2)
-
-
-
     return {
         "aide_pv": aide_pv,
         "aide_batterie": aide_batterie,
@@ -1398,24 +1332,17 @@ def calculer_analyse_financiere(mon_tableau, cout_total_net, cout_om_annuel=0.0)
     prix_injection = st.session_state["prix_injection"]
     prix_communaute_achat = st.session_state["prix_communaute_achat"]
     prix_communaute_vente = st.session_state["prix_communaute_vente"]
-
     total_conso_kwh = mon_tableau['Consumption'].sum() / 1000
     total_import_kwh = mon_tableau['Import_Reseau'].sum() / 1000
     total_export_kwh = mon_tableau['Export_Reseau'].sum() / 1000
     total_auto_directe_kwh = mon_tableau['Autoconso_Directe'].sum() / 1000
     total_batterie_kwh = mon_tableau['Decharge_Batterie'].sum() / 1000
-
     cout_sans_installation = round(total_conso_kwh * prix_electricite, 2)
-
     economie_auto_directe = round(total_auto_directe_kwh * prix_electricite, 2)
     economie_batterie = round(total_batterie_kwh * prix_electricite_batterie, 2)
-
     cout_import_normal = round(total_import_kwh * prix_electricite, 2)
     revenu_export_normal = round(total_export_kwh * prix_injection, 2)
     solde_normal = round(cout_import_normal - revenu_export_normal, 2)
-
-
-
     gain_normal_avant_om = round(
         cout_sans_installation
         - solde_normal
@@ -1452,17 +1379,9 @@ def calculer_analyse_financiere(mon_tableau, cout_total_net, cout_om_annuel=0.0)
         2
     )
 
-
-
-
-
     gain_normal = round(gain_normal_avant_om - cout_om_annuel, 2)
     gain_mix = round(gain_mix_avant_om - cout_om_annuel, 2)
     gain_communaute = round(gain_communaute_avant_om - cout_om_annuel, 2)
-
-
-
-
 
     if gain_normal != 0:
         pct_gain_communaute = round(((gain_communaute - gain_normal) / gain_normal) * 100, 1)
@@ -1471,11 +1390,9 @@ def calculer_analyse_financiere(mon_tableau, cout_total_net, cout_om_annuel=0.0)
         pct_gain_communaute = 0.0
         pct_gain_mix = 0.0
 
-
     tr_normal = (cout_total_net / gain_normal) if gain_normal > 0 else None
     tr_mix = (cout_total_net / gain_mix) if gain_mix > 0 else None
     tr_communaute = (cout_total_net / gain_communaute) if gain_communaute > 0 else None
-
 
     _, gain_cumule_20_normal = calculer_gains_cumules_projection(
         economie_auto_directe=economie_auto_directe,
@@ -1483,14 +1400,12 @@ def calculer_analyse_financiere(mon_tableau, cout_total_net, cout_om_annuel=0.0)
         revenu_export=revenu_export_normal,
         nb_annees=20
     )
-
     _, gain_cumule_20_mix = calculer_gains_cumules_projection(
         economie_auto_directe=economie_auto_directe,
         economie_batterie=economie_batterie,
         revenu_export=revenu_export_mix,
         nb_annees=20
     )
-
     _, gain_cumule_20_communaute = calculer_gains_cumules_projection(
         economie_auto_directe=economie_auto_directe,
         economie_batterie=economie_batterie,
@@ -1503,47 +1418,35 @@ def calculer_analyse_financiere(mon_tableau, cout_total_net, cout_om_annuel=0.0)
         "prix_injection": prix_injection,
         "prix_communaute_achat": prix_communaute_achat,
         "prix_communaute_vente": prix_communaute_vente,
-
         "total_conso_kwh": total_conso_kwh,
         "total_import_kwh": total_import_kwh,
         "total_export_kwh": total_export_kwh,
         "total_auto_directe_kwh": total_auto_directe_kwh,
         "total_batterie_kwh": total_batterie_kwh,
-
         "cout_sans_installation": cout_sans_installation,
         "economie_auto_directe": economie_auto_directe,
         "economie_batterie": economie_batterie,
-
         "cout_import_normal": cout_import_normal,
         "revenu_export_normal": revenu_export_normal,
         "solde_normal": solde_normal,
-
         "cout_import_communaute": cout_import_communaute,
         "revenu_export_communaute": revenu_export_communaute,
         "solde_communaute": solde_communaute,
-
         "cout_import_mix": cout_import_mix,
         "revenu_export_mix": revenu_export_mix,
         "solde_mix": solde_mix,
-
         "cout_om_annuel": cout_om_annuel,
-
         "gain_normal_avant_om": gain_normal_avant_om,
         "gain_mix_avant_om": gain_mix_avant_om,
         "gain_communaute_avant_om": gain_communaute_avant_om,
-
         "gain_normal": gain_normal,
         "gain_mix": gain_mix,
         "gain_communaute": gain_communaute,
-
         "pct_gain_communaute": pct_gain_communaute,
         "pct_gain_mix": pct_gain_mix,
-
         "tr_normal": tr_normal,
         "tr_mix": tr_mix,
         "tr_communaute": tr_communaute,
-
-
         "gain_20_ans_normal": round(float(np.asarray(gain_cumule_20_normal).ravel()[-1]), 2),
         "gain_20_ans_mix": round(float(np.asarray(gain_cumule_20_mix).ravel()[-1]), 2),
         "gain_20_ans_communaute": round(float(np.asarray(gain_cumule_20_communaute).ravel()[-1]), 2),
@@ -1585,11 +1488,8 @@ def calculer_gains_cumules_projection(
 
     return np.array(gains_annuels), np.array(gains_cumules)
 
-
-
 def calculer_roi_depuis_gains_cumules(cout_net, gains_cumules):
     gains_cumules = np.asarray(gains_cumules, dtype=float)
-
     for i, gain_cumule in enumerate(gains_cumules):
         if gain_cumule >= cout_net:
             if i == 0:
@@ -1607,15 +1507,11 @@ def calculer_roi_depuis_gains_cumules(cout_net, gains_cumules):
 
     return None
 
-
 # ==========================================
 # AFFICHAGE EN-TÊTE
 # ==========================================
-
 def afficher_entete():
-
     col1, col2 = st.columns([2.2, 1.1], vertical_alignment="center")
-
     with col1:
         st.markdown("""
         <h1 style="margin-bottom: 0.3rem;">Simulateur Photovoltaïque & Stockage</h1>
@@ -1633,7 +1529,6 @@ def afficher_entete():
 # ==========================================
 # ONGLET IMPORT
 # ==========================================
-
 def afficher_onglet_import(tab_import):
     with tab_import:
         if logo_path.exists():
@@ -1817,15 +1712,11 @@ def afficher_onglet_import(tab_import):
                     f"({production_annuelle_theorique:,.0f} kWh).".replace(",", " ")
                 )
             else:
-                st.success("La somme mensuelle correspond bien à la production annuelle estimée.")
-
-                
+                st.success("La somme mensuelle correspond bien à la production annuelle estimée.")    
         # ------------------------------------------------------
         # AFFICHAGE DE LA PRODUCTION
         # ------------------------------------------------------
-
         mon_tableau_prod_apercu = None
-
         try:
             if mode_prod == "CSV SolarEdge" and fichier_prod is not None:
                 fichier_prod.seek(0)
@@ -1853,10 +1744,44 @@ def afficher_onglet_import(tab_import):
             if mon_tableau_prod_apercu is not None:
                 afficher_apercu_production(mon_tableau_prod_apercu, titre="Aperçu de la production")
 
+
+            if "tableau_json_importe" in st.session_state:
+                st.subheader("Aperçu du projet importé")
+
+                tableau_json = st.session_state["tableau_json_importe"].copy()
+                tableau_json["Date&Time"] = pd.to_datetime(tableau_json["Date&Time"])
+
+                if "Inverter Output" in tableau_json.columns:
+                    afficher_apercu_production(
+                        tableau_json[["Date&Time", "Inverter Output"]],
+                        titre="Aperçu de la production importée"
+                    )
+
+                if "Consumption_base" in tableau_json.columns:
+                    st.subheader("Aperçu de la consommation importée")
+
+                    conso_col = pd.to_numeric(
+                        tableau_json["Consumption_base"],
+                        errors="coerce"
+                    ).fillna(0)
+
+                    total_kwh = conso_col.sum() / 1000
+                    puissance_max = conso_col.max()
+
+                    c1, c2, c3 = st.columns(3)
+                    c1.metric("Total annuel", f"{total_kwh:,.0f} kWh".replace(",", " "))
+                    c2.metric("Puissance max", f"{puissance_max:,.0f} W")
+                    c3.metric("Conso / jour moyen", f"{total_kwh / 365:.1f} kWh")
+
+                    afficher_apercu_4_saisons_conso_base(
+                        date_series=tableau_json["Date&Time"],
+                        consommation_base=conso_col.values,
+                        titre="Consommation importée sur 4 jours de saison"
+                    )
+
+
         except Exception as e:
             st.warning(f"Aperçu production indisponible : {e}")
-
-
 
         st.markdown("""
         <div style="
@@ -1867,18 +1792,12 @@ def afficher_onglet_import(tab_import):
         "></div>
         """, unsafe_allow_html=True)
 
-
-
-
-
         conso_solaredge_active = (
             mode_prod == "CSV SolarEdge"
             and utiliser_conso_solaredge
             and mon_tableau_prod_apercu is not None
             and "Consumption_base" in mon_tableau_prod_apercu.columns
         )
-
-
 
         # =====================================================
         # 2. CONSOMMATION
@@ -1972,8 +1891,6 @@ def afficher_onglet_import(tab_import):
                             mime="text/csv"
                         )
 
-
-
                 dates_conso_base = dates_apercu
                 consommation_base_saisons = conso_col.values
                 mode_apercu_conso = "solaredge"
@@ -2056,9 +1973,6 @@ def afficher_onglet_import(tab_import):
                     c1.metric("Total Annuel", f"{total_kwh:,.0f} kWh".replace(",", " "))
                     c2.metric("Puissance Max réelle", f"{puissance_max:,.0f} W")
                     c3.metric("Conso / jour moyen", f"{(y_jour.sum()/1000):.1f} kWh")
-
-
-
 
                 else:
                     st.info("Ajoutez vos appareils. Horaires : '8-10' ou '12-13;19-21'")
@@ -2254,10 +2168,6 @@ def afficher_onglet_import(tab_import):
                 titre="Consommation de base sur 4 jours de saison"
             )
 
-
-
-
-
         except Exception as e:
             st.error(f"Erreur : {e}")
 
@@ -2277,24 +2187,10 @@ def afficher_onglet_import(tab_import):
         "colonne_prod": colonne_prod,
         "utiliser_conso_solaredge": utiliser_conso_solaredge
     }
-
-
-
-
-
-
-
-
-
-
-
-
 # ==========================================
 # SIDEBAR
 # ==========================================
-
 def afficher_sidebar():
-
     st.sidebar.markdown("""
     <div style="
         height: 2px;
@@ -2303,12 +2199,7 @@ def afficher_sidebar():
         margin: 1px 0 1px 0;
     "></div>
     """, unsafe_allow_html=True)
-
-
-    
-    
     st.sidebar.subheader("Évolution de la production PV 📈")
-
     if "augmentation_prod_pct" not in st.session_state:
         st.session_state["augmentation_prod_pct"] = 0.0
 
@@ -2318,7 +2209,6 @@ def afficher_sidebar():
         step=1.0,
         key="augmentation_prod_pct"
     )
-
     st.sidebar.markdown("""
     <div style="
         height: 2px;
@@ -2327,12 +2217,6 @@ def afficher_sidebar():
         margin: 1px 0 1px 0;
     "></div>
     """, unsafe_allow_html=True)
-
-
-
-
-
-
     st.sidebar.subheader("Stockage (Batterie) 🔋")
 
     df_batteries = charger_batteries()
@@ -2346,12 +2230,9 @@ def afficher_sidebar():
         "Activer la simulation de batterie",
         key="activer_batterie"
     )
-
-
     capa_wh = 0.0
     puiss_w = 0.0
     capa_kwh = 0.0
-
     capa_kwh_utile = 0.0
     capa_wh_utile = 0.0
     capa_kwh_nominale = 0.0
@@ -2373,11 +2254,7 @@ def afficher_sidebar():
             liste_batteries,
             key="choix_batterie"
         )
-
         infos_batterie = df_batteries[df_batteries['Référence'] == choix_batterie].iloc[0]
-
-
-
         capa_kwh_utile = float(str(infos_batterie['Energie util']).replace(',', '.'))
         capa_kwh_nominale = float(str(infos_batterie['Energie nom totale (kWh)']).replace(',', '.'))
 
@@ -2452,30 +2329,18 @@ def afficher_sidebar():
             ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"],
             key="jours_selectionnes"
         )
-
         heures_par_jour = duree_totale_horaires(horaires_borne)
         energie_jour_kwh = puissance_borne_kw * heures_par_jour
         energie_semaine_kwh = energie_jour_kwh * len(jours_selectionnes)
         energie_an_kwh = energie_semaine_kwh * 52
-
         st.sidebar.caption(f"Charge par jour actif : {energie_jour_kwh:.1f} kWh")
         st.sidebar.caption(f"Charge par semaine : {energie_semaine_kwh:.1f} kWh")
-
         km_equivalent = (energie_an_kwh / 20) * 100
-
         st.sidebar.success(
             f"Consommation annuelle estimée : {energie_an_kwh:,.0f} kWh  \n"
             f"Équivalent : {km_equivalent:,.0f} km/an  \n"
             f"(base : 20 kWh / 100 km)".replace(",", " ")
         )
-
-
-
-
-
-
-
-
     st.sidebar.markdown("""
     <div style="
         height: 2px;
@@ -2545,16 +2410,10 @@ def afficher_sidebar():
             ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"],
             key="jours_chauffe_eau"
         )
-
-
-
-
         heures_chauffe_eau_par_jour = duree_totale_horaires(horaires_chauffe_eau)
-
         energie_chauffe_eau_jour_kwh = puissance_chauffe_eau_kw * heures_chauffe_eau_par_jour
         energie_chauffe_eau_semaine_kwh = energie_chauffe_eau_jour_kwh * len(jours_chauffe_eau)
         energie_chauffe_eau_an_kwh = energie_chauffe_eau_semaine_kwh * 52
-
         references_personnes = {
             1: 848,
             2: 1697,
@@ -2563,12 +2422,10 @@ def afficher_sidebar():
             5: 4240,
             6: 5090
         }
-
         personnes_equivalent = min(
             references_personnes,
             key=lambda p: abs(references_personnes[p] - energie_chauffe_eau_an_kwh)
         )
-
         litres_equivalent = {
             1: 50,
             2: 100,
@@ -2577,7 +2434,6 @@ def afficher_sidebar():
             5: 250,
             6: 300
         }
-
         st.sidebar.caption(
             f"Consommation annuelle estimée : {energie_chauffe_eau_an_kwh:,.0f} kWh".replace(",", " ")
         )
@@ -2588,15 +2444,6 @@ def afficher_sidebar():
             f"Ballon indicatif : ± {litres_equivalent[personnes_equivalent]} L"
             .replace(",", " ")
         )
-
-
-
-
-
-
-
-
-
     st.sidebar.markdown("""
     <div style="
         height: 2px;
@@ -2614,9 +2461,6 @@ def afficher_sidebar():
         "Ajouter une pompe à chaleur",
         key="pac_active"
     )
-
-
-
     coeffs_pac_defaut = {
         1: 1.40,   # janvier
         2: 1.30,
@@ -2631,11 +2475,6 @@ def afficher_sidebar():
         11: 1.10,
         12: 1.40
     }
-
-
-
-
-
     puissance_pac_kw = 0.0
     horaires_pac = "6-9;17-22"
     jours_pac = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
@@ -2694,11 +2533,6 @@ def afficher_sidebar():
             coeffs_pac_mensuels.append(coeff)
 
         st.session_state["coeffs_pac_mensuels"] = coeffs_pac_mensuels
-
-
-
-
-
     st.sidebar.markdown("""
     <div style="
         height: 2px;
@@ -2708,7 +2542,6 @@ def afficher_sidebar():
     "></div>
     """, unsafe_allow_html=True)
     st.sidebar.subheader("Chauffage électrique ♨️")
-
 
     if "chauffage_active" not in st.session_state:
         st.session_state["chauffage_active"] = False
@@ -2774,12 +2607,9 @@ def afficher_sidebar():
             mois_noms_chauffage,
             key="mois_chauffage_actifs"
         )
-
         heures_chauffage_par_jour = duree_totale_horaires(horaires_chauffage)
-
         energie_chauffage_jour_kwh = puissance_chauffage_kw * heures_chauffage_par_jour
         energie_chauffage_semaine_kwh = energie_chauffage_jour_kwh * len(jours_chauffage)
-
         nb_mois_actifs = len(mois_chauffage_actifs)
         energie_chauffage_an_kwh = energie_chauffage_semaine_kwh * 52 * (nb_mois_actifs / 12)
 
@@ -2787,12 +2617,6 @@ def afficher_sidebar():
             f"Consommation chauffage estimée : {energie_chauffage_an_kwh:,.0f} kWh/an"
             .replace(",", " ")
         )
-
-
-
-
-
-
 
     st.sidebar.markdown("""
     <div style="
@@ -2812,7 +2636,6 @@ def afficher_sidebar():
         key="ems_actif"
     )
 
-
     taux_ems = 0
     if ems_actif:
         if "taux_ems" not in st.session_state:
@@ -2823,7 +2646,6 @@ def afficher_sidebar():
             [0,5,10,15,25,50,75, 100],
             key="taux_ems"
         )
-
 
     st.sidebar.markdown("""
     <div style="
@@ -2843,9 +2665,7 @@ def afficher_sidebar():
         "Afficher la puissance de référence",
         key="puissance_reference_active"
     )
-
     puissance_reference_kw = 3
-
     if puissance_reference_active:
         puissance_reference_kw = st.sidebar.selectbox(
             "Puissance de référence (kW)",
@@ -2853,11 +2673,6 @@ def afficher_sidebar():
             index=0,
             key="puissance_reference_kw"
         )
-
-
-
-
-
     return {
         "augmentation_prod_pct": augmentation_prod_pct,
         "activer_batterie": activer_batterie,
@@ -2899,28 +2714,20 @@ def afficher_sidebar():
             ["Jan", "Fév", "Mar", "Avr", "Oct", "Nov", "Déc"]
         ),
     }
-
 # ==========================================
 # ONGLET SAISONS
 # ==========================================
-
 def afficher_onglet_saisons(tab_saisons, mon_tableau, activer_batterie, puissance_reference_active, puissance_reference_kw):
     with tab_saisons:
         st.header("Analyse des 4 Saisons")
-
         st.markdown("**Sélectionnez les courbes à afficher :**")
         col1, col2, col3, col4, col5 = st.columns(5)
-
         afficher_prod = col1.checkbox("Production", value=True)
         afficher_conso = col2.checkbox("Consommation", value=True)
         afficher_auto = col3.checkbox("Autoconsommation", value=True)
         afficher_import = col4.checkbox("Importé (Réseau)", value=False)
         afficher_export = col5.checkbox("Exporté (Réseau)", value=False)
-
-
-
         fig1, axes = plt.subplots(2, 2, figsize=(14, 8))
-
         dates_a_tracer = [
             (12, 21, "21 Décembre (Hiver)", axes[0, 0]),
             (3, 21, "21 Mars (Printemps)", axes[0, 1]),
@@ -2978,11 +2785,6 @@ def afficher_onglet_saisons(tab_saisons, mon_tableau, activer_batterie, puissanc
                         color="#91FF00",
                         alpha=0.6
                     )
-
-
-
-
-
             if afficher_import:
                 ax.plot(x_dense_dates, lisser_courbe(journee['Import_Reseau']), label='Importé (Réseau)', color='#F44336', linewidth=2, linestyle='--')
             if afficher_export:
@@ -3014,11 +2816,9 @@ def afficher_onglet_saisons(tab_saisons, mon_tableau, activer_batterie, puissanc
             fig1.subplots_adjust(top=0.88)
 
         st.pyplot(fig1, use_container_width=False)
-
 # ==========================================
 # ONGLET MENSUEL
 # ==========================================
-
 def afficher_onglet_mensuel(tab_mensuel, mon_tableau):
     with tab_mensuel:
         st.header("Bilan Énergétique Mensuel")
@@ -3043,29 +2843,17 @@ def afficher_onglet_mensuel(tab_mensuel, mon_tableau):
             label='Import réseau',
             color="#FFA600"
         )
-
         ax1.set_title("Répartition de la consommation", fontsize=16)
         ax1.set_ylabel("Énergie (kWh)", fontsize=14)
         ax1.set_xticks(x)
         ax1.set_xticklabels(mois_noms)
         ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=2)
         ax1.grid(axis='y', linestyle='--', alpha=0.7)
-
-
-
         totaux_conso = bilan_mensuel['Autoconsommation'] + bilan_mensuel['Import_Reseau']
         for i, total in enumerate(totaux_conso):
             ax1.text(i, total + 5, f"{total:.0f}", ha='center', va='bottom', fontsize=9)
             ax1.set_ylim(0, max(totaux_conso.max() * 1.18, totaux_conso.max() + 20))
-
-
-
-
         ax2.bar(x, bilan_mensuel['Autoconsommation'], width=0.6, label='Autoconsommation', color="#08CE5A")
-
-
-
-        
         ax2.bar(
             x,
             bilan_mensuel['Export_Reseau'],
@@ -3090,11 +2878,9 @@ def afficher_onglet_mensuel(tab_mensuel, mon_tableau):
         plt.tight_layout()
         plt.subplots_adjust(hspace=0.4)
         st.pyplot(fig2, use_container_width=False)
-
 # ==========================================
 # ONGLET ANNUEL
 # ==========================================
-
 def afficher_onglet_annuel(tab_annuel, mon_tableau, indicateurs, capa_wh, activer_batterie):
     with tab_annuel:
         st.header("Flux d'Énergie Annuel")
@@ -3115,7 +2901,6 @@ def afficher_onglet_annuel(tab_annuel, mon_tableau, indicateurs, capa_wh, active
         total_chauffe_eau = indicateurs["total_chauffe_eau"]
         total_pac = indicateurs["total_pac"]
         total_chauffage = indicateurs["total_chauffage"]
-
         batterie_utilisee = total_ess > 0.1
 
         def polar_to_cartesian(cx, cy, r, angle_deg):
@@ -3364,10 +3149,7 @@ def afficher_onglet_annuel(tab_annuel, mon_tableau, indicateurs, capa_wh, active
         </div>
         """, height=640)
 
-
-
-
-        # --------------------------------------------------
+        # -------------------------------------------------
         # Bloc 1 : performance énergétique
         # --------------------------------------------------
         st.markdown("### Performance énergétique")
@@ -3412,15 +3194,7 @@ def afficher_onglet_annuel(tab_annuel, mon_tableau, indicateurs, capa_wh, active
         # Bloc 2 : détail consommation + donut
         # --------------------------------------------------
 
-
-
-
-
         st.markdown("### Répartition de la consommation annuelle")
-
-
-
-
         col_gauche, col_droite = st.columns([1.15, 0.85])
 
         with col_gauche:
@@ -3432,7 +3206,6 @@ def afficher_onglet_annuel(tab_annuel, mon_tableau, indicateurs, capa_wh, active
                 ("Pompe à chaleur", f"{total_pac:,.0f} kWh".replace(",", " "), "linear-gradient(180deg, #f1fbf4, #e7f7ec)", "#4caf50", "#c8e7cf"),
                 ("Chauffage électrique", f"{total_chauffage:,.0f} kWh".replace(",", " "), "linear-gradient(180deg, #f8d3d3, #efb9b9)", "#c71b1b", "#e4a4a4"),
             ]
-
             cols_usages = st.columns(2)
 
             for i, (titre, valeur, fond, accent, bordure) in enumerate(cartes_usages):
@@ -3519,14 +3292,8 @@ def afficher_onglet_annuel(tab_annuel, mon_tableau, indicateurs, capa_wh, active
                 ax_donut.axis("equal")
 
                 st.pyplot(fig_donut, use_container_width=False)
-
-
             else:
                 st.info("Aucune consommation détaillée disponible pour générer le graphique.")
-
-
-
-
         # --------------------------------------------------
         # Tableau de vérification
         # --------------------------------------------------
@@ -3539,9 +3306,7 @@ def afficher_onglet_annuel(tab_annuel, mon_tableau, indicateurs, capa_wh, active
         "></div>
         """, unsafe_allow_html=True)
 
-        
         tableau_verification = creer_tableau_verification(mon_tableau, capa_wh)
-
         st.subheader("Tableau horaire de vérification")
         st.markdown("Ce tableau permet de contrôler heure par heure les flux énergétiques calculés.")
         st.dataframe(tableau_verification, use_container_width=True, height=400)
@@ -3555,11 +3320,9 @@ def afficher_onglet_annuel(tab_annuel, mon_tableau, indicateurs, capa_wh, active
             mime="text/csv",
             key="download_verification_csv"
         )
-
 # ==========================================
 # ONGLET BUDGET 
 # ==========================================
-
 def afficher_onglet_budget(tab_budget, budget, puissance_crete, activer_batterie):
     with tab_budget:
         st.header("Investissement initial 📊")
@@ -3568,10 +3331,7 @@ def afficher_onglet_budget(tab_budget, budget, puissance_crete, activer_batterie
             "<h4 style='margin-bottom:10px;'>Activation des subsides</h4>",
             unsafe_allow_html=True
         )
-
-
         c_aide1, c_aide2 = st.columns(2)
-
         with c_aide1:
             if "aide_pv_active" not in st.session_state:
                 st.session_state["aide_pv_active"] = True
@@ -3580,7 +3340,6 @@ def afficher_onglet_budget(tab_budget, budget, puissance_crete, activer_batterie
                 "Activer l'aide photovoltaïque",
                 key="aide_pv_active"
             )
-
         with c_aide2:
             if "aide_batterie_active" not in st.session_state:
                 st.session_state["aide_batterie_active"] = True
@@ -3589,7 +3348,6 @@ def afficher_onglet_budget(tab_budget, budget, puissance_crete, activer_batterie
                 "Activer l'aide batterie",
                 key="aide_batterie_active"
             )
-
         st.markdown("""
         <div style="
             height: 3px;
@@ -3724,28 +3482,6 @@ def afficher_onglet_budget(tab_budget, budget, puissance_crete, activer_batterie
             </div>
             """, height=400)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         components.html(f"""
         <div style="
             background: #ffffff;
@@ -3790,20 +3526,9 @@ def afficher_onglet_budget(tab_budget, budget, puissance_crete, activer_batterie
         Les montants affichés sont des estimations basées sur des hypothèses économiques et ne reflètent pas nécessairement le coût réel final de l’installation.
         </small>
         """, unsafe_allow_html=True)
-
-
-
-
-
-
-
-
-
-
 # ==========================================
 # ONGLET ANALYSE FINANCIERE
 # ==========================================
-
 def afficher_onglet_finance(
     tab_finance,
     mon_tableau,
@@ -3856,7 +3581,6 @@ def afficher_onglet_finance(
             margin: 5px 0 5px 0;
         "></div>
         """, unsafe_allow_html=True)
-
 
         st.subheader("Comparaison des scénarios techniques ⚙️")
 
@@ -3985,10 +3709,6 @@ def afficher_onglet_finance(
                 </div>
                 """, height=330)
 
-
-
-
-
         with s3:
             if resultats_ems is not None and budget_pv_batt_ems is not None and gain_total_ems is not None:
                 components.html(f"""
@@ -4089,9 +3809,6 @@ def afficher_onglet_finance(
                 </div>
                 """, height=220)
 
-
-
-
         nb_annees_roi = 20
         annees_roi = np.arange(1, nb_annees_roi + 1)
 
@@ -4103,9 +3820,6 @@ def afficher_onglet_finance(
         )
 
         cout_net_pv = budget_pv["cout_total_net"]
-
-
-
 
         fig_roi_scenarios, ax_roi = plt.subplots(figsize=(8, 4))
         ax_roi.tick_params(axis='both', labelsize=7.5)
@@ -4176,7 +3890,6 @@ def afficher_onglet_finance(
                 nb_annees=nb_annees_roi
             )
 
-
             cout_net_ems = budget_pv_batt_ems["cout_total_net"]
 
             ax_roi.plot(
@@ -4198,8 +3911,6 @@ def afficher_onglet_finance(
                 zorder=2
             )
 
-
-
         ax_roi.set_title("Projection des gains cumulés par scénario", fontsize=11)
         ax_roi.set_xlabel("Année", fontsize=10)
         ax_roi.set_ylabel("Montant (€)", fontsize=10)
@@ -4208,12 +3919,6 @@ def afficher_onglet_finance(
         ax_roi.legend(fontsize=5)
 
         st.pyplot(fig_roi_scenarios, use_container_width=False)
-
-
-
-
-
-
 
         roi_pv_projete = calculer_roi_depuis_gains_cumules(
             budget_pv["cout_total_net"],
@@ -4234,10 +3939,6 @@ def afficher_onglet_finance(
                 gains_cumules_ems
             )
 
-
-
-
-
         r1, r2, r3 = st.columns(3)
 
         with r1:
@@ -4257,9 +3958,6 @@ def afficher_onglet_finance(
                 "ROI estimé - PV + batterie + EMS",
                 f"{roi_ems_projete} ans" if roi_ems_projete is not None else "—"
             )
-
-
-
 
         st.subheader("Détail économique des scénarios techniques")
         st.markdown(
@@ -4282,8 +3980,6 @@ def afficher_onglet_finance(
             c6.metric("Économie autoconso directe", f"{finance_pv['economie_auto_directe']:,.2f} €".replace(",", " "))
             c7.metric("Économie via batterie", "0.00 €")
 
-
-
         with st.expander("Détail – Scénario PV + Batterie", expanded=False):
             if scenario_batterie_disponible and finance_pv_batt is not None and budget_pv_batt is not None:
                 st.markdown("**Synthèse principale**")
@@ -4302,7 +3998,6 @@ def afficher_onglet_finance(
 
             else:
                 st.info("Le scénario PV + batterie n'est pas disponible.")
-
 
         with st.expander("Détail – Scénario PV + Batterie + EMS", expanded=False):
             if resultats_ems is not None and budget_pv_batt_ems is not None and finance_pv_batt is not None:
@@ -4324,17 +4019,14 @@ def afficher_onglet_finance(
                 e9.metric("Économie via EMS total", f"{resultats_ems['economie_ems_totale']:,.2f} €".replace(",", " "))
                 e10.metric("Surplus total PV", f"{resultats_ems['surplus_disponible']:,.0f} kWh".replace(",", " "))
                 e11.metric("Conso pilotable", f"{resultats_ems['energie_revalorisee']:,.0f} kWh".replace(",", " "))
-
                 e12, e13, e14, e15 = st.columns(4)
                 e12.metric("Conso pilotable max", f"{resultats_ems['conso_pilotable']:,.0f} kWh".replace(",", " "))
                 e13.metric("Énergie revalorisée", f"{resultats_ems['energie_revalorisee']:,.0f} kWh".replace(",", " "))
                 e14.metric("Import restant", f"{resultats_ems['import_ems_kwh']:,.0f} kWh".replace(",", " "))
                 e15.metric("Export restant", f"{resultats_ems['export_restant_ems']:,.0f} kWh".replace(",", " "))
 
-
             else:
                 st.info("Le scénario PV + batterie + EMS n'est pas disponible.")
-
 
         st.markdown("""
         <div style="
@@ -4344,8 +4036,6 @@ def afficher_onglet_finance(
             margin: 5px 0 5px 0;
         "></div>
         """, unsafe_allow_html=True)
-
-
 
         nb_annees = 20
         annees = np.arange(1, nb_annees + 1)
@@ -4391,9 +4081,6 @@ def afficher_onglet_finance(
             gains_cumules_communaute
         )
 
-
-
-
         st.subheader("Scénarios avec communautés énergétiques 🏘️")
         st.markdown(
             "<p style='color: black; font-size: 14px; margin-top: -8px;'>"
@@ -4438,7 +4125,6 @@ def afficher_onglet_finance(
             </div>
             """, height=220)
 
-
         with k2:
             components.html(f"""
             <div style="
@@ -4469,9 +4155,6 @@ def afficher_onglet_finance(
                 </div>
             </div>
             """, height=220)
-
-
-
 
         with k3:
             components.html(f"""
@@ -4504,33 +4187,20 @@ def afficher_onglet_finance(
             </div>
             """, height=220)
 
-
-
-
-
         fig_compare, ax = plt.subplots(figsize=(8, 4))
-
         ax.plot(annees, gains_cumules_normal, linewidth=2, marker='o', markersize=4, label="Mode normal")
         ax.plot(annees, gains_cumules_mix, linewidth=2, marker='o', markersize=4, label="Communauté 50 %")
         ax.plot(annees, gains_cumules_communaute, linewidth=2, marker='o', markersize=4, label="Communauté")
         ax.axhline(y=budget["cout_total_net"], linewidth=1.5, linestyle='--', label="Coût net après aides")
-
-
-
         ax.set_title("Projection des gains cumulés sur 15 ans", fontsize=11)
         ax.set_xlabel("Année", fontsize=10)
         ax.set_ylabel("Montant (€)", fontsize=10)
         ax.set_xticks(annees)
         ax.grid(True, linestyle='--', alpha=0.6)
         ax.legend(fontsize=5)
-
         ax.tick_params(axis='x', labelsize=7.5)
         ax.tick_params(axis='y', labelsize=7.5)
-
         st.pyplot(fig_compare, use_container_width=False)
-
-
-
         r_comm_1, r_comm_2, r_comm_3 = st.columns(3)
 
         with r_comm_1:
@@ -4550,9 +4220,6 @@ def afficher_onglet_finance(
                 "ROI estimé - Communauté",
                 f"{roi_communaute_projete:.1f} ans" if roi_communaute_projete is not None else "Non calculable"
             )
-
-
-
 
         with st.expander("📘 Détail – Mode normal", expanded=False):
             c1, c2, c3, c4 = st.columns(4)
@@ -4583,12 +4250,9 @@ def afficher_onglet_finance(
             d2.metric("Coût imports communauté", f"{finance['cout_import_communaute']:,.2f} €".replace(",", " "))
             d3.metric("Revenu vente communauté", f"{finance['revenu_export_communaute']:,.2f} €".replace(",", " "))
             d4.metric("Gain annuel estimé", f"{finance['gain_communaute']:,.2f} €".replace(",", " "))
-
             d5, d6 = st.columns(2)
             d5.metric("Solde annuel communauté", f"{finance['solde_communaute']:,.2f} €".replace(",", " "))
             d6.metric("Gain cumulé 20 ans", f"{finance['gain_20_ans_communaute']:,.2f} €".replace(",", " "))
-
-
 
 
         st.markdown("""
@@ -4664,29 +4328,9 @@ def afficher_onglet_finance(
                 st.error(f"Erreur lors du calcul du tarif dynamique : {e}")
         else:
             st.info("Importez un fichier EPEX horaire pour calculer le coût avec tarif dynamique.")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # ==========================================
 # ONGLET CONFIG
 # ==========================================
-
 def afficher_onglet_config(tab_config):
     with tab_config:
         st.header("Paramètres avancés")
@@ -4775,9 +4419,6 @@ def afficher_onglet_config(tab_config):
             step=0.01
         )
 
-
-
-
         st.markdown("---")
 
         st.subheader("Hypothèses tarif dynamique")
@@ -4806,9 +4447,6 @@ def afficher_onglet_config(tab_config):
             format="%.3f"
         )
 
-
-
-
         st.markdown("---")
 
         st.subheader("Hypothèses O&M et évolution des prix")
@@ -4836,9 +4474,6 @@ def afficher_onglet_config(tab_config):
             format="%.3f"
         )
 
-
-
-
         st.session_state["perte_pv_annuelle"] = st.number_input(
             "Perte annuelle de production PV (%)",
             min_value=0.0,
@@ -4852,8 +4487,6 @@ def afficher_onglet_config(tab_config):
             value=st.session_state["perte_batterie_annuelle"],
             step=0.1
         )
-
-
 # ==========================================
 # ONGLET SAUVEGARDE ET EXPORT
 # ==========================================
@@ -4912,25 +4545,6 @@ def afficher_onglet_export(
         if fichier_projet is not None:
             if st.button("Importer le projet", key="btn_import_projet"):
                 charger_projet_json(fichier_projet)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # ==========================================
 # MAIN
 # ==========================================
