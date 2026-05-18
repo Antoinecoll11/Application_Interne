@@ -854,7 +854,19 @@ def construire_donnees_projet(mon_tableau_pv=None):
 
 
 
+def enregistrer_conso_solaredge_dans_fichier(conso_series, nom_colonne):
+    df_conso = pd.read_csv(conso_path, sep=";", decimal=",")
 
+    conso_series = pd.Series(conso_series).reset_index(drop=True)
+
+    if len(conso_series) < len(df_conso):
+        conso_series = conso_series.reindex(range(len(df_conso)), fill_value=0)
+    else:
+        conso_series = conso_series.iloc[:len(df_conso)]
+
+    df_conso[nom_colonne] = conso_series.values
+
+    df_conso.to_csv(conso_path, sep=";", decimal=",", index=False)
 
 
 
@@ -1966,6 +1978,28 @@ def afficher_onglet_import(tab_import):
                     c1.metric("Total Annuel", f"{total_kwh:,.0f} kWh".replace(",", " "))
                     c2.metric("Puissance Max réelle", f"{puissance_max:,.0f} W")
                     c3.metric("Conso / jour moyen", f"{(y_jour.sum()/1000):.1f} kWh")
+
+                    st.markdown("### Enregistrer cette consommation")
+
+                    nom_colonne_solaredge = st.text_input(
+                        "Nom de la colonne à ajouter dans consommation.csv",
+                        value="Conso_SolarEdge",
+                        key="nom_colonne_conso_solaredge"
+                    )
+
+                    if st.button("Enregistrer la consommation SolarEdge"):
+                        if nom_colonne_solaredge.strip() == "":
+                            st.error("Veuillez entrer un nom de colonne.")
+                        else:
+                            enregistrer_conso_solaredge_dans_fichier(
+                                conso_series=conso_col.values,
+                                nom_colonne=nom_colonne_solaredge.strip()
+                            )
+                            st.success(
+                                f"La consommation SolarEdge a été enregistrée dans consommation.csv sous la colonne : {nom_colonne_solaredge}"
+                            )
+
+
 
                 else:
                     st.info("Ajoutez vos appareils. Horaires : '8-10' ou '12-13;19-21'")
