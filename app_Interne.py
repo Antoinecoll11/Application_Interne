@@ -888,7 +888,28 @@ def charger_batteries():
     except Exception:
         return pd.DataFrame()
 
+
+
 def charger_production(mode_prod, fichier_prod, puissance_crete, prod_specifique=None, df_repartition=None, colonne_prod=None, utiliser_conso_solaredge=False):
+
+    if fichier_prod is None and "tableau_json_importe" in st.session_state:
+        mon_tableau = st.session_state["tableau_json_importe"].copy()
+
+        mon_tableau["Date&Time"] = pd.to_datetime(mon_tableau["Date&Time"])
+        mon_tableau["Inverter Output"] = pd.to_numeric(
+            mon_tableau["Inverter Output"],
+            errors="coerce"
+        ).fillna(0)
+
+        if "Consumption_base" in mon_tableau.columns:
+            mon_tableau["Consumption_base"] = pd.to_numeric(
+                mon_tableau["Consumption_base"],
+                errors="coerce"
+            ).fillna(0)
+
+        return mon_tableau
+
+
     if mode_prod == "CSV SolarEdge":
         donnees_prod = pd.read_csv(fichier_prod, sep=",", skiprows=[1], index_col=False)
         donnees_prod = donnees_prod[donnees_prod['Date&Time'].astype(str).str.contains('-', na=False)]
