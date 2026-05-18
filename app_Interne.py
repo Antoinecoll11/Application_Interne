@@ -2014,64 +2014,106 @@ def afficher_onglet_import(tab_import):
 
             st.subheader(f"Aperçu : {profil_choisi}")
 
-            if mode_conso == "Calculateur personnalisé (Tableau)":
-                conso_jour_semaine = profil_24h_semaine.sum() / 1000
-                conso_jour_weekend = profil_24h_weekend.sum() / 1000
-                puissance_max = max(profil_24h_semaine.max(), profil_24h_weekend.max())
+            if mode_prod == "CSV SolarEdge" and utiliser_conso_solaredge and mon_tableau_prod_apercu is not None and "Consumption_base" in mon_tableau_prod_apercu.columns:
+                st.subheader("Aperçu : consommation SolarEdge")
 
-                c1, c2, c3, c4 = st.columns(4)
-                c1.metric("Total Annuel", f"{total_kwh:,.0f} kWh".replace(",", " "))
-                c2.metric("Puissance Max", f"{puissance_max:,.0f} W")
-                c3.metric("Conso / jour semaine", f"{conso_jour_semaine:.1f} kWh")
-                c4.metric("Conso / jour week-end", f"{conso_jour_weekend:.1f} kWh")
+                conso_col = pd.to_numeric(
+                    mon_tableau_prod_apercu["Consumption_base"],
+                    errors="coerce"
+                ).fillna(0)
 
-            else:
+                dates_apercu = mon_tableau_prod_apercu["Date&Time"]
+
+                df_conso_reelle = pd.DataFrame({
+                    "Date&Time": dates_apercu,
+                    "Consumption": conso_col.values
+                })
+
+                conso_par_jour = df_conso_reelle.groupby(df_conso_reelle["Date&Time"].dt.date)["Consumption"].sum()
+                jour_plus_charge = conso_par_jour.idxmax()
+
+                jour_reel = df_conso_reelle[
+                    df_conso_reelle["Date&Time"].dt.date == jour_plus_charge
+                ].copy()
+
+                y_jour = jour_reel.set_index(jour_reel["Date&Time"].dt.hour)["Consumption"]
+                y_mois = conso_col.groupby(dates_apercu.dt.month).sum() / 1000
+                total_kwh = conso_col.sum() / 1000
                 puissance_max = conso_col.max()
 
                 c1, c2, c3 = st.columns(3)
-                c1.metric("Total Annuel", f"{total_kwh:,.0f} kWh".replace(",", " "))
-                c2.metric("Puissance Max réelle", f"{puissance_max:,.0f} W")
-                c3.metric("Conso / jour moyen", f"{(y_jour.sum()/1000):.1f} kWh")
+                c1.metric("Total annuel", f"{total_kwh:,.0f} kWh".replace(",", " "))
+                c2.metric("Puissance max réelle", f"{puissance_max:,.0f} W")
+                c3.metric("Conso / jour moyen", f"{(total_kwh / 365):.1f} kWh")
 
+                dates_conso_base = dates_apercu
+                consommation_base_saisons = conso_col.values
 
-            fig_apercu, (ax_jour, ax_mois) = plt.subplots(1, 2, figsize=(14, 4))
-
-            if mode_conso == "Calculateur personnalisé (Tableau)":
-                ax_jour.plot(y_jour.index, y_jour["Semaine"], linewidth=2.5, label="Semaine")
-                ax_jour.plot(y_jour.index, y_jour["Week-end"], linewidth=2.5, linestyle="--", label="Week-end")
-                ax_jour.set_title("Modèle sur un jour type")
-                ax_jour.set_xticks(range(0, 24, 2))
-                ax_jour.set_xlabel("Heure")
-                ax_jour.set_ylabel("Puissance (W)")
-                ax_jour.set_ylim(bottom=0)
-                ax_jour.grid(True, linestyle='--', alpha=0.6)
-                ax_jour.legend()
             else:
-                ax_jour.plot(y_jour.index, y_jour.values, color='#1565C0', linewidth=2.5)
-                ax_jour.fill_between(y_jour.index, y_jour.values, color='#1565C0', alpha=0.2)
-                ax_jour.set_title("Jour le plus chargé")
-                ax_jour.set_xticks(range(0, 24, 2))
-                ax_jour.set_xlabel("Heure")
-                ax_jour.set_ylabel("Puissance (W)")
-                ax_jour.set_ylim(bottom=0)
-                ax_jour.grid(True, linestyle='--', alpha=0.6)
+                st.subheader(f"Aperçu : {profil_choisi}")
 
-            mois_noms = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
-            ax_mois.bar(mois_noms, y_mois.values, color='#FF9800', edgecolor='black', alpha=0.8)
-            ax_mois.set_title("Consommation Mensuelle Totale")
-            ax_mois.set_xlabel("Mois")
-            ax_mois.set_ylabel("Énergie (kWh)")
-            ax_mois.grid(axis='y', linestyle='--', alpha=0.6)
-
-            plt.tight_layout()
-            st.pyplot(fig_apercu)
+    # ici tu laisses ton ancien code d’aperçu consommation
 
 
-            afficher_apercu_4_saisons_conso_base(
-                date_series=dates_conso_base,
-                consommation_base=consommation_base_saisons,
-                titre="Consommation de base sur 4 jours de saison"
-            )
+
+                if mode_conso == "Calculateur personnalisé (Tableau)":
+                    conso_jour_semaine = profil_24h_semaine.sum() / 1000
+                    conso_jour_weekend = profil_24h_weekend.sum() / 1000
+                    puissance_max = max(profil_24h_semaine.max(), profil_24h_weekend.max())
+
+                    c1, c2, c3, c4 = st.columns(4)
+                    c1.metric("Total Annuel", f"{total_kwh:,.0f} kWh".replace(",", " "))
+                    c2.metric("Puissance Max", f"{puissance_max:,.0f} W")
+                    c3.metric("Conso / jour semaine", f"{conso_jour_semaine:.1f} kWh")
+                    c4.metric("Conso / jour week-end", f"{conso_jour_weekend:.1f} kWh")
+
+                else:
+                    puissance_max = conso_col.max()
+
+                    c1, c2, c3 = st.columns(3)
+                    c1.metric("Total Annuel", f"{total_kwh:,.0f} kWh".replace(",", " "))
+                    c2.metric("Puissance Max réelle", f"{puissance_max:,.0f} W")
+                    c3.metric("Conso / jour moyen", f"{(y_jour.sum()/1000):.1f} kWh")
+
+
+                fig_apercu, (ax_jour, ax_mois) = plt.subplots(1, 2, figsize=(14, 4))
+
+                if mode_conso == "Calculateur personnalisé (Tableau)":
+                    ax_jour.plot(y_jour.index, y_jour["Semaine"], linewidth=2.5, label="Semaine")
+                    ax_jour.plot(y_jour.index, y_jour["Week-end"], linewidth=2.5, linestyle="--", label="Week-end")
+                    ax_jour.set_title("Modèle sur un jour type")
+                    ax_jour.set_xticks(range(0, 24, 2))
+                    ax_jour.set_xlabel("Heure")
+                    ax_jour.set_ylabel("Puissance (W)")
+                    ax_jour.set_ylim(bottom=0)
+                    ax_jour.grid(True, linestyle='--', alpha=0.6)
+                    ax_jour.legend()
+                else:
+                    ax_jour.plot(y_jour.index, y_jour.values, color='#1565C0', linewidth=2.5)
+                    ax_jour.fill_between(y_jour.index, y_jour.values, color='#1565C0', alpha=0.2)
+                    ax_jour.set_title("Jour le plus chargé")
+                    ax_jour.set_xticks(range(0, 24, 2))
+                    ax_jour.set_xlabel("Heure")
+                    ax_jour.set_ylabel("Puissance (W)")
+                    ax_jour.set_ylim(bottom=0)
+                    ax_jour.grid(True, linestyle='--', alpha=0.6)
+
+                mois_noms = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
+                ax_mois.bar(mois_noms, y_mois.values, color='#FF9800', edgecolor='black', alpha=0.8)
+                ax_mois.set_title("Consommation Mensuelle Totale")
+                ax_mois.set_xlabel("Mois")
+                ax_mois.set_ylabel("Énergie (kWh)")
+                ax_mois.grid(axis='y', linestyle='--', alpha=0.6)
+
+                plt.tight_layout()
+                st.pyplot(fig_apercu)
+
+
+                afficher_apercu_4_saisons_conso_base(
+                    date_series=dates_conso_base,
+                    consommation_base=consommation_base_saisons,
+                    titre="Consommation de base sur 4 jours de saison"
+                )
 
         except Exception as e:
             st.error(f"Erreur : {e}")
