@@ -4906,11 +4906,20 @@ def main():
     initialiser_session_state()
 
     # Si un projet JSON a été importé, on recharge les paramètres
+
     if "projet_a_charger" in st.session_state:
         projet = st.session_state["projet_a_charger"]
 
         for cle, valeur in projet.items():
             st.session_state[cle] = valeur
+
+        if "production_consommation_horaire" in projet:
+            st.session_state["tableau_json_importe"] = pd.DataFrame(
+                projet["production_consommation_horaire"]
+            )
+
+        st.session_state["mode_prod"] = "Projet JSON importé"
+        st.session_state["mode_conso"] = "Projet JSON importé"
 
         if "coeffs_mensuels_conso" in projet:
             for i, val in enumerate(projet["coeffs_mensuels_conso"]):
@@ -4920,7 +4929,6 @@ def main():
             for i, val in enumerate(projet["coeffs_pac_mensuels"]):
                 st.session_state[f"coeff_pac_{i}"] = val
 
-
         if "productions_mensuelles" in projet:
             mois_noms = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin",
                         "Juil", "Aoû", "Sep", "Oct", "Nov", "Déc"]
@@ -4928,9 +4936,9 @@ def main():
             for mois, val in zip(mois_noms, projet["productions_mensuelles"]):
                 st.session_state[f"prod_mois_{mois}"] = val
 
-
-
         del st.session_state["projet_a_charger"]
+
+
 
     # =========================================================
     # 2. MISE EN FORME DE LA PAGE
@@ -4964,7 +4972,14 @@ def main():
     # =========================================================
     # 5. VÉRIFICATION DES DONNÉES DE PRODUCTION
     # =========================================================
-    if mode_prod in ["CSV SolarEdge", "Fichier simple Excel"] and fichier_prod is None:
+
+
+
+    if (
+        mode_prod in ["CSV SolarEdge", "Fichier simple Excel"]
+        and fichier_prod is None
+        and "tableau_json_importe" not in st.session_state
+    ):
         st.info("Veuillez choisir un mode de production ou importer un fichier de production pour lancer la simulation.")
 
         afficher_onglet_config(tab_config)
@@ -4987,7 +5002,7 @@ def main():
         )
 
         st.stop()
-        
+
     # Pour éviter les soucis de lecture du fichier uploadé
     if mode_prod == "CSV SolarEdge" and fichier_prod is not None:
         fichier_prod.seek(0)
