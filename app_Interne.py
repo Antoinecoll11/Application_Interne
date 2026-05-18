@@ -1905,20 +1905,29 @@ def afficher_onglet_import(tab_import):
                     )
 
                 if st.button("Enregistrer la consommation SolarEdge"):
-                        if nom_colonne_solaredge.strip() == "":
-                            st.error("Veuillez entrer un nom de colonne.")
-                        else:
-                            enregistrer_conso_solaredge_dans_fichier(
-                                conso_series=conso_col.values,
-                                nom_colonne=nom_colonne_solaredge.strip()
-                            )
-                            st.success(
-                                f"La consommation SolarEdge a été enregistrée dans consommation.csv sous la colonne : {nom_colonne_solaredge}"
-                            )
+                    if nom_colonne_solaredge.strip() == "":
+                        st.error("Veuillez entrer un nom de colonne.")
+                    else:
+                        enregistrer_conso_solaredge_dans_fichier(
+                            conso_series=conso_col.values,
+                            nom_colonne=nom_colonne_solaredge.strip()
+                        )
+                        st.success(
+                            f"La consommation SolarEdge a été enregistrée dans consommation.csv sous la colonne : {nom_colonne_solaredge}"
+                        )
 
+                        csv_modifie = pd.read_csv(conso_path, sep=";", decimal=",").to_csv(
+                            sep=";",
+                            decimal=",",
+                            index=False
+                        )
 
-
-
+                        st.download_button(
+                            label="Télécharger le fichier consommation.csv mis à jour",
+                            data=csv_modifie,
+                            file_name="consommation.csv",
+                            mime="text/csv"
+                        )
 
 
 
