@@ -4347,23 +4347,13 @@ def afficher_onglet_config(tab_config):
             step=0.05
         )
 
-        options_cout_batterie = {
-            "Batterie 5 kWh — 1.70 €/Wh": 1.70,
-            "Batterie 7 kWh — 1.18 €/Wh": 1.18,
-            "Batterie 10 kWh — 1.00 €/Wh": 1.00,
-            "Batterie 12 kWh — 1.00 €/Wh": 1.00,
-            "Batterie 14 kWh — 1.00 €/Wh": 1.00,
-            "Batterie 15 à 21 kWh — 0.90 €/Wh": 0.90,
-            "Valeur standard — 1.00 €/Wh": 1.00,
-        }
-
-        option_selectionnee = st.selectbox(
-            "Coût batterie selon capacité",
-            options=list(options_cout_batterie.keys()),
-            index=2
+        st.session_state["cout_batterie_par_wh"] = st.number_input(
+            "Coût batterie (€/Wh)",
+            min_value=0.0,
+            max_value=5.0,
+            value=st.session_state.get("cout_batterie_par_wh", 1.00),
+            step=0.05
         )
-
-        st.session_state["cout_batterie_par_wh"] = options_cout_batterie[option_selectionnee]
 
         st.caption(
             f"Valeur utilisée pour le calcul : {st.session_state['cout_batterie_par_wh']:.2f} €/Wh"
