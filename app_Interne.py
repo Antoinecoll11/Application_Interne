@@ -2720,25 +2720,82 @@ def afficher_sidebar():
 def afficher_onglet_saisons(tab_saisons, mon_tableau, activer_batterie, puissance_reference_active, puissance_reference_kw):
     with tab_saisons:
         st.header("Analyse des 4 Saisons")
+
         st.markdown("**Sélectionnez les courbes à afficher :**")
         col1, col2, col3, col4, col5 = st.columns(5)
+
         afficher_prod = col1.checkbox("Production", value=True)
         afficher_conso = col2.checkbox("Consommation", value=True)
         afficher_auto = col3.checkbox("Autoconsommation", value=True)
         afficher_import = col4.checkbox("Importé (Réseau)", value=False)
         afficher_export = col5.checkbox("Exporté (Réseau)", value=False)
+
         fig1, axes = plt.subplots(2, 2, figsize=(14, 8))
+
         dates_a_tracer = [
-            (12, 21, "21 Décembre (Hiver)", axes[0, 0]),
-            (3, 21, "21 Mars (Printemps)", axes[0, 1]),
-            (6, 21, "21 Juin (Été)", axes[1, 0]),
-            (9, 21, "21 Septembre (Automne)", axes[1, 1])
+            (12, 21, "21 Décembre (Hiver)", axes[0,0]),
+            (3, 21, "21 Mars (Printemps)", axes[0,1]),
+            (6, 21, "21 Juin (Été)", axes[1,0]),
+            (9, 21, "21 Septembre (Automne)", axes[1,1])
         ]
 
         handles_globaux = []
         labels_globaux = []
 
+        # ==========================================
+        # Calcul automatique échelle commune
+        # ==========================================
+
+        valeurs_max = []
+
         for mois, jour, titre, ax in dates_a_tracer:
+
+            journee_temp = mon_tableau[
+                (mon_tableau['Date&Time'].dt.month == mois) &
+                (mon_tableau['Date&Time'].dt.day == jour)
+            ]
+
+            if not journee_temp.empty:
+
+                colonnes_a_verifier = []
+
+                if afficher_prod:
+                    colonnes_a_verifier.append("Inverter Output")
+
+                if afficher_conso:
+                    colonnes_a_verifier.append("Consumption")
+
+                if afficher_auto:
+                    colonnes_a_verifier.append("Autoconso_Directe")
+
+                    if activer_batterie and "Decharge_Batterie" in journee_temp.columns:
+                        colonnes_a_verifier.append("Decharge_Batterie")
+
+                if afficher_import:
+                    colonnes_a_verifier.append("Import_Reseau")
+
+                if afficher_export:
+                    colonnes_a_verifier.append("Export_Reseau")
+
+                for col in colonnes_a_verifier:
+                    if col in journee_temp.columns:
+                        valeurs_max.append(
+                            journee_temp[col].max()
+                        )
+
+        if puissance_reference_active:
+            valeurs_max.append(
+                puissance_reference_kw * 1000
+            )
+
+        y_max_global = max(valeurs_max) * 1.15 if valeurs_max else 1
+
+        # ==========================================
+        # Affichage graphiques
+        # ==========================================
+
+        for mois, jour, titre, ax in dates_a_tracer:
+
             journee = mon_tableau[
                 (mon_tableau['Date&Time'].dt.month == mois) &
                 (mon_tableau['Date&Time'].dt.day == jour)
@@ -2746,7 +2803,14 @@ def afficher_onglet_saisons(tab_saisons, mon_tableau, activer_batterie, puissanc
 
             if journee.empty:
                 ax.set_title(titre)
-                ax.text(0.5, 0.5, "Aucune donnée", ha='center', va='center', transform=ax.transAxes)
+                ax.text(
+                    0.5,
+                    0.5,
+                    "Aucune donnée",
+                    ha='center',
+                    va='center',
+                    transform=ax.transAxes
+                )
                 ax.grid(True, linestyle='--', alpha=0.6)
                 continue
 
@@ -2755,56 +2819,137 @@ def afficher_onglet_saisons(tab_saisons, mon_tableau, activer_batterie, puissanc
 
             if len(x_num) < 2:
                 ax.set_title(titre)
-                ax.text(0.5, 0.5, "Pas assez de points", ha='center', va='center', transform=ax.transAxes)
+
+                ax.text(
+                    0.5,
+                    0.5,
+                    "Pas assez de points",
+                    ha='center',
+                    va='center',
+                    transform=ax.transAxes
+                )
+
                 ax.grid(True, linestyle='--', alpha=0.6)
                 continue
 
-            x_dense_num = np.linspace(x_num.min(), x_num.max(), 300)
-            x_dense_dates = mdates.num2date(x_dense_num)
+            x_dense_num = np.linspace(
+                x_num.min(),
+                x_num.max(),
+                300
+            )
+
+            x_dense_dates = mdates.num2date(
+                x_dense_num
+            )
 
             def lisser_courbe(y_vals):
-                lisseur = PchipInterpolator(x_num, y_vals)
-                return np.clip(lisseur(x_dense_num), 0, None)
+                lisseur = PchipInterpolator(
+                    x_num,
+                    y_vals
+                )
+
+                return np.clip(
+                    lisseur(x_dense_num),
+                    0,
+                    None
+                )
 
             if afficher_prod:
-                ax.plot(x_dense_dates, lisser_courbe(journee['Inverter Output']), label='Production', color='#FFD700', linewidth=2.5)
+                ax.plot(
+                    x_dense_dates,
+                    lisser_courbe(journee['Inverter Output']),
+                    label='Production',
+                    color='#FFD700',
+                    linewidth=2.5
+                )
+
             if afficher_conso:
-                ax.plot(x_dense_dates, lisser_courbe(journee['Consumption']), label='Consommation', color='#2196F3', linewidth=2.5)
+                ax.plot(
+                    x_dense_dates,
+                    lisser_courbe(journee['Consumption']),
+                    label='Consommation',
+                    color='#2196F3',
+                    linewidth=2.5
+                )
 
             if afficher_auto:
-                y_auto_directe = lisser_courbe(journee['Autoconso_Directe'])
-                ax.fill_between(x_dense_dates, y_auto_directe, label='Autoconso directe', color="#67AD17", alpha=0.6)
+
+                y_auto_directe = lisser_courbe(
+                    journee['Autoconso_Directe']
+                )
+
+                ax.fill_between(
+                    x_dense_dates,
+                    y_auto_directe,
+                    label='Autoconso directe',
+                    color="#67AD17",
+                    alpha=0.6
+                )
 
                 if activer_batterie and 'Decharge_Batterie' in journee.columns:
-                    y_batterie = lisser_courbe(journee['Decharge_Batterie'])
+
+                    y_batterie = lisser_courbe(
+                        journee['Decharge_Batterie']
+                    )
+
                     ax.fill_between(
                         x_dense_dates,
                         y_auto_directe,
-                        y_auto_directe + y_batterie,
+                        y_auto_directe+y_batterie,
                         label='Via batterie',
                         color="#91FF00",
                         alpha=0.6
                     )
+
             if afficher_import:
-                ax.plot(x_dense_dates, lisser_courbe(journee['Import_Reseau']), label='Importé (Réseau)', color='#F44336', linewidth=2, linestyle='--')
+                ax.plot(
+                    x_dense_dates,
+                    lisser_courbe(journee['Import_Reseau']),
+                    label='Importé (Réseau)',
+                    color='#F44336',
+                    linewidth=2,
+                    linestyle='--'
+                )
+
             if afficher_export:
-                ax.plot(x_dense_dates, lisser_courbe(journee['Export_Reseau']), label='Exporté (Réseau)', color='#FF9800', linewidth=2, linestyle='--')
-            
+                ax.plot(
+                    x_dense_dates,
+                    lisser_courbe(journee['Export_Reseau']),
+                    label='Exporté (Réseau)',
+                    color='#FF9800',
+                    linewidth=2,
+                    linestyle='--'
+                )
+
             if puissance_reference_active:
                 ax.axhline(
-                    y=puissance_reference_kw * 1000,
+                    y=puissance_reference_kw*1000,
                     color="#00F7FF",
                     linestyle="--",
                     linewidth=2,
                     label=f"Puissance réf. {puissance_reference_kw} kW"
                 )
+
             ax.set_title(titre)
-            ax.set_ylabel('Puissance (W)')
+            ax.set_ylabel("Puissance (W)")
+
+            # même échelle partout
+            ax.set_ylim(0, y_max_global)
+
             ax.grid(True, linestyle='--', alpha=0.6)
 
-            ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
-            ax.xaxis.set_major_locator(mdates.HourLocator(interval=4))
-            ax.tick_params(axis='x', rotation=45)
+            ax.xaxis.set_major_formatter(
+                mdates.DateFormatter('%H:%M')
+            )
+
+            ax.xaxis.set_major_locator(
+                mdates.HourLocator(interval=4)
+            )
+
+            ax.tick_params(
+                axis='x',
+                rotation=45
+            )
 
             if not handles_globaux:
                 handles_globaux, labels_globaux = ax.get_legend_handles_labels()
@@ -2812,10 +2957,22 @@ def afficher_onglet_saisons(tab_saisons, mon_tableau, activer_batterie, puissanc
         plt.tight_layout()
 
         if handles_globaux:
-            fig1.legend(handles_globaux, labels_globaux, loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=5, fontsize=11)
+            fig1.legend(
+                handles_globaux,
+                labels_globaux,
+                loc='upper center',
+                bbox_to_anchor=(0.5,1.05),
+                ncol=5,
+                fontsize=11
+            )
+
             fig1.subplots_adjust(top=0.88)
 
-        st.pyplot(fig1, use_container_width=False)
+        st.pyplot(
+            fig1,
+            use_container_width=False
+        )
+
 # ==========================================
 # ONGLET MENSUEL
 # ==========================================
