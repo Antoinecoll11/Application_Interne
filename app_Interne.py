@@ -2734,7 +2734,7 @@ def afficher_onglet_saisons(tab_saisons, mon_tableau, activer_batterie, puissanc
         dates_a_tracer = [
             (12, 21, "21 Décembre (Hiver)", axes[0,0]),
             (3, 21, "21 Mars (Printemps)", axes[0,1]),
-            (6, 21, "21 Juin (Été)", axes[1,0]),
+            (6, 24, "21 Juin (Été)", axes[1,0]),
             (9, 21, "21 Septembre (Automne)", axes[1,1])
         ]
 
