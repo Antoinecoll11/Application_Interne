@@ -474,10 +474,9 @@ def afficher_apercu_production(mon_tableau_prod, titre="Aperçu production"):
     puissance_max_w = df["Inverter Output"].max()
     production_jour_moyenne_kwh = total_kwh / 365 if len(df) >= 24 else 0
 
-    c1, c2, c3 = st.columns(3)
+    c1 = st.columns(1)[0]
     c1.metric("Production annuelle", f"{total_kwh:,.0f} kWh".replace(",", " "))
-    c2.metric("Puissance max", f"{puissance_max_w:,.0f} W".replace(",", " "))
-    c3.metric("Production / jour moyen", f"{production_jour_moyenne_kwh:.1f} kWh")
+
 
     # --- Courbes jour type été / hiver
     jour_ete = df[
@@ -1648,7 +1647,7 @@ def afficher_onglet_import(tab_import):
                 0.03, 0.05, 0.07, 0.10, 0.12, 0.13,
                 0.13, 0.12, 0.10, 0.07, 0.05, 0.03
             ]
-
+0
             if "production_annuelle_reference" not in st.session_state:
                 st.session_state["production_annuelle_reference"] = production_annuelle_theorique
 
