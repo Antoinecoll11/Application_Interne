@@ -1971,7 +1971,7 @@ def afficher_onglet_import(tab_import):
                     c1, c2, c3 = st.columns(3)
                     c1.metric("Total Annuel", f"{total_kwh:,.0f} kWh".replace(",", " "))
                     c2.metric("Puissance Max réelle", f"{puissance_max:,.0f} W")
-                    c3.metric("Conso / jour moyen", f"{(y_jour.sum()/1000):.1f} kWh")
+                    c3.metric("Conso / jour moyen", f"{(total_kwh/ 365):.1f} kWh")
 
                 else:
                     st.info("Ajoutez vos appareils. Horaires : '8-10' ou '12-13;19-21'")
@@ -3313,11 +3313,11 @@ def afficher_onglet_annuel(tab_annuel, mon_tableau, indicateurs, capa_wh, active
         cartes_perf = [
             ("Taux autoconsommation", f"{taux_autoconso:.1f}%", "linear-gradient(180deg, #fff7e8, #ffefcc)", "#f5a623", "#fbe3b0"),
             ("Solaire direct", f"{total_solaire_direct:,.0f} kWh".replace(",", " "), "linear-gradient(180deg, #fff7e8, #ffefcc)", "#f5a623", "#fbe3b0"),
-            ("Taux autonomie", f"{taux_autonomie:.1f}%", "linear-gradient(180deg, #eef7ff, #e3f1ff)", "#2f87c8", "#bcdcff"),  
+            ("Taux autosuffisance", f"{taux_autonomie:.1f}%", "linear-gradient(180deg, #eef7ff, #e3f1ff)", "#2f87c8", "#bcdcff"),  
             ("Importé réseau", f"{total_import:,.0f} kWh".replace(",", " "), "linear-gradient(180deg, #f5f0fb, #ede3f8)", "#8e71c7", "#d8c9ef"),
             ("Énergie autoconsommée", f"{total_auto:,.0f} kWh".replace(",", " "), "linear-gradient(180deg, #fffaf0, #fff2db)", "#f5a623", "#fbe3b0"),
             ("Via batterie", f"{total_ess:,.0f} kWh".replace(",", " "), "linear-gradient(180deg, #effaf1, #e5f6e8)", "#43b581", "#bfe4c8"),
-            ("Cycles / an", f"{nombre_cycles:.0f}", "linear-gradient(180deg, #effaf1, #e5f6e8)", "#43b581", "#bfe4c8"),
+           #("Cycles / an", f"{nombre_cycles:.0f}", "linear-gradient(180deg, #effaf1, #e5f6e8)", "#43b581", "#bfe4c8"),
             ("Exporté réseau", f"{total_export:,.0f} kWh".replace(",", " "), "linear-gradient(180deg, #f5f0fb, #ede3f8)", "#8e71c7", "#d8c9ef"),
             ]
 
