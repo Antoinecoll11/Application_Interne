@@ -1647,7 +1647,7 @@ def afficher_onglet_import(tab_import):
                 0.03, 0.05, 0.07, 0.10, 0.12, 0.13,
                 0.13, 0.12, 0.10, 0.07, 0.05, 0.03
             ]
-0
+
             if "production_annuelle_reference" not in st.session_state:
                 st.session_state["production_annuelle_reference"] = production_annuelle_theorique
 
