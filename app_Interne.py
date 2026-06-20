@@ -4338,10 +4338,44 @@ def afficher_onglet_finance(
             """, height=220)
 
         fig_compare, ax = plt.subplots(figsize=(8, 4))
-        ax.plot(annees, gains_cumules_normal, linewidth=2, marker='o', markersize=4, label="Mode normal")
-        ax.plot(annees, gains_cumules_mix, linewidth=2, marker='o', markersize=4, label="Communauté 50 %")
-        ax.plot(annees, gains_cumules_communaute, linewidth=2, marker='o', markersize=4, label="Communauté")
-        ax.axhline(y=budget["cout_total_net"], linewidth=1.5, linestyle='--', label="Coût net après aides")
+
+        ax.plot(
+            annees,
+            gains_cumules_normal,
+            linewidth=2.5,
+            marker='o',
+            markersize=4,
+            label="Mode normal",
+            color="#2F87C8"
+        )
+
+        ax.plot(
+            annees,
+            gains_cumules_mix,
+            linewidth=2.5,
+            marker='o',
+            markersize=4,
+            label="Communauté 50 %",
+            color="#43B581"
+        )
+
+        ax.plot(
+            annees,
+            gains_cumules_communaute,
+            linewidth=2.5,
+            marker='o',
+            markersize=4,
+            label="Communauté",
+            color="#F28C28"
+        )
+
+        ax.axhline(
+            y=budget["cout_total_net"],
+            linewidth=1.8,
+            linestyle='--',
+            label="Coût net après aides",
+            color="#555555"
+        )
         ax.set_title("Projection des gains cumulés sur 20 ans", fontsize=11)
         ax.set_xlabel("Année", fontsize=10)
         ax.set_ylabel("Montant (€)", fontsize=10)
