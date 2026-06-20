@@ -3899,7 +3899,7 @@ def afficher_onglet_finance(
 
                     <div style="font-size:16px; color:#506070; line-height:1.6;">
                         Économie via l'EMS :
-                        <strong> {f"{resultats_ems['gain_ems']:,.2f} €".replace(",", " ")}</strong>
+                        <strong> {f"{resultats_ems['gain_annuel_total_ems']:,.2f} €".replace(",", " ")}</strong>
                     </div>
 
 
