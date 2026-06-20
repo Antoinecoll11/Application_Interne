@@ -3933,7 +3933,7 @@ def afficher_onglet_finance(
 
 
                 </div>
-                """, height=380)
+                """, height=390)
             else:
                 components.html("""
                 <div style="
